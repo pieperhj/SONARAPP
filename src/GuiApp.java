@@ -30,7 +30,6 @@ public class GuiApp extends JFrame{
 
     // Status bar (shared across all forms)
     private final JLabel statusLabel = new JLabel("Ready");
-    private Database db;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new GuiApp().setVisible(true));
@@ -42,11 +41,17 @@ public class GuiApp extends JFrame{
         setSize(800, 580);
         setLocationRelativeTo(null);
 
-        db = new Database();
+        initDatabase();
         buildUI();
         wireNavListeners();   // ← toolbar navigation listeners
     }
-
+    // DB setup
+    private void initDatabase() {
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
+        } catch (SQLException ex) {
+            showError("DB init failed: " + ex.getMessage());
+        }
+    }
     //UI setup
     private void buildUI() {
         // Toolbar
@@ -260,7 +265,7 @@ public class GuiApp extends JFrame{
                 }
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Members (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                             "INSERT INTO Member (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                     ps.setString(1, mFName);
                     ps.setString(2, mLName);
                     ps.setString(3, mEmail);
@@ -286,7 +291,7 @@ public class GuiApp extends JFrame{
                 if (!validId(idText))  return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Members WHERE MemberId = ?")) {
+                             "SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member WHERE MemberId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
@@ -324,7 +329,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "UPDATE Members SET MFName=?, MLName=?, MEmail=?, Major=?, Status=?, MStreet=?, MCity=?, MState=?, MZip=?, StartDate=?, EndDate=? WHERE MemberId=?")) {
+                             "UPDATE Member SET MFName=?, MLName=?, MEmail=?, Major=?, Status=?, MStreet=?, MCity=?, MState=?, MZip=?, StartDate=?, EndDate=? WHERE MemberId=?")) {
                     ps.setString(1, mFName);
                     ps.setString(2, mLName);
                     ps.setString(3, mEmail);
@@ -351,7 +356,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "DELETE FROM members WHERE memberId=?")) {
+                             "DELETE FROM member WHERE memberId=?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -388,7 +393,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT id, name, email FROM users ORDER BY id")) {
+                 ResultSet rs   = stmt.executeQuery("SELECT MemberId, MFName, MLName, MEmail, Makor, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member ORDER BY MemberId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -516,7 +521,7 @@ public class GuiApp extends JFrame{
                 }
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Members (SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                             "INSERT INTO Event (SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
                     ps.setInt(1, Integer.parseInt(speakerId));
                     ps.setString(2, eStreet);
                     ps.setString(3, eCity);
@@ -538,7 +543,7 @@ public class GuiApp extends JFrame{
                 if (!validId(idText))  return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "SELECT EventId, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Events WHERE EventId = ?")) {
+                             "SELECT EventId, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Event WHERE EventId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
@@ -570,7 +575,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "UPDATE Members SET SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
+                             "UPDATE Event SET SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
                     ps.setString(1, speakerId);
                     ps.setString(2, eStreet);
                     ps.setString(3, eCity);
@@ -593,7 +598,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "DELETE FROM events WHERE eventId=?")) {
+                             "DELETE FROM Event WHERE eventId=?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -626,7 +631,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT EventId, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Events ORDER BY EventId")) {
+                 ResultSet rs   = stmt.executeQuery("SELECT EventId, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Event ORDER BY EventId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -760,7 +765,7 @@ public class GuiApp extends JFrame{
                 }
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Speakers (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                             "INSERT INTO Speaker (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                     ps.setString(1, sFName);
                     ps.setString(2, sLName);
                     ps.setString(3, sEmail);
@@ -785,7 +790,7 @@ public class GuiApp extends JFrame{
                 if (!validId(idText))  return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "SELECT SpeakerId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Speakers WHERE SpeakerId = ?")) {
+                             "SELECT SpeakerId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Speaker WHERE SpeakerId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
@@ -821,7 +826,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "UPDATE Speakers SET SFName=?, SLName=?, SEmail=?, Title=?, Industry=?, SStreet=?, SCity=?, SState=?, SZip=?, SCost=? WHERE SpeakerId=?")) {
+                             "UPDATE Speaker SET SFName=?, SLName=?, SEmail=?, Title=?, Industry=?, SStreet=?, SCity=?, SState=?, SZip=?, SCost=? WHERE SpeakerId=?")) {
                     ps.setString(1, sFName);
                     ps.setString(2, sLName);
                     ps.setString(3, sEmail);
@@ -847,7 +852,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "DELETE FROM speakers WHERE speakerId=?")) {
+                             "DELETE FROM Speaker WHERE speakerId=?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -883,7 +888,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM speakers ORDER BY speakerId")) {
+                 ResultSet rs   = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker ORDER BY SpeakerId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -893,7 +898,7 @@ public class GuiApp extends JFrame{
                             rs.getString("SState"), rs.getString("SZip"), rs.getDate("SCost")});
                     n++;
                 }
-                setStatus("Loaded " + n + " speaker(s).");
+                setStatus("Loaded " + n + " Speaker(s).");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
 
@@ -960,7 +965,7 @@ public class GuiApp extends JFrame{
             g.anchor = GridBagConstraints.WEST;
             addRow(form, g, 0, "ID (for search / update / delete):", dueIdField);
             addRow(form, g, 1, "Member Id:", memberIdField);
-            addRow(form, g, 2, "Event Date:", dDateField);
+            addRow(form, g, 2, "Date:", dDateField);
             addRow(form, g, 3, "Cost:", amountField);
 
             // Buttons
@@ -987,7 +992,7 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
-                String memberId = memberIdField.getText().trim();
+                String memberId = dueIdField.getText().trim();
                 Date dDate = Date.valueOf(dDateField.getText());
                 double amount = Double.parseDouble(amountField.getText());
 
