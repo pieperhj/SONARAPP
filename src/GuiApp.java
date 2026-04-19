@@ -4,27 +4,1257 @@ import java.awt.*;
 import java.sql.*;
 
 public class GuiApp extends JFrame{
-    // ── Card names — used to identify each form in the CardLayout
+
+    // ── DB config ──────────────────────────────────────────────────────────────
+    private static final String DB_URL  = "jdbc:mysql://138.49.184.123:3306/byrne8370_SONAR";
+    private static final String DB_USER = "pieper.hans";
+    private static final String DB_PASS = "DHB7E-RkrS3JrgNdT";
+
+    // Card names — used to identify each form in the CardLayout
     private static final String CARD_MEMBERS = "MEMBERS";
     private static final String CARD_EVENTS = "EVENTS";
     private static final String CARD_SPEAKERS = "SPEAKERS";
     private static final String CARD_DUES = "DUES";
-    private static final String CARD_ADDRESSES = "ADDRESSES";
     private static final String CARD_SQL   = "SQL";
 
-    // ── CardLayout + its container
+    // CardLayout + its container
     private final CardLayout cardLayout   = new CardLayout();
     private final JPanel     cardPanel    = new JPanel(cardLayout);
 
-    // ── Toolbar nav buttons
+    // Toolbar nav buttons
     private final JButton navMembersBtn = new JButton("👤  Members");
     private final JButton navEventsBtn = new JButton("👤  Events");
     private final JButton navSpeakersBtn = new JButton("👤  Speakers");
     private final JButton navDuesBtn = new JButton("👤  Dues");
-    private final JButton navAddressesBtn = new JButton("👤  Addresses");
     private final JButton navSqlBtn   = new JButton("⌨  SQL Runner");
 
-    // ── Status bar (shared across all forms)
+    // Status bar (shared across all forms)
     private final JLabel statusLabel = new JLabel("Ready");
+    private Database db;
 
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new GuiApp().setVisible(true));
+    }
+
+    public GuiApp() {
+        super("SONAR App");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(800, 580);
+        setLocationRelativeTo(null);
+
+        db = new Database();
+        buildUI();
+        wireNavListeners();   // ← toolbar navigation listeners
+    }
+
+    //UI setup
+    private void buildUI() {
+        // Toolbar
+        JToolBar toolbar = new JToolBar();
+        toolbar.setFloatable(false);
+        toolbar.setBackground(new Color(45, 45, 48));
+        styleNavButton(navMembersBtn, true);   // starts active
+        styleNavButton(navEventsBtn,   false);
+        styleNavButton(navSpeakersBtn,   false);
+        styleNavButton(navDuesBtn,   false);
+        styleNavButton(navSqlBtn,   false);
+        toolbar.add(navMembersBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navEventsBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navSpeakersBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navDuesBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navSqlBtn);
+
+        // Register each form as a named card
+        cardPanel.add(new MembersPanel(), CARD_MEMBERS);
+        cardPanel.add(new EventsPanel(), CARD_EVENTS);
+        cardPanel.add(new SpeakersPanel(), CARD_SPEAKERS);
+        cardPanel.add(new DuesPanel(), CARD_DUES);
+        cardPanel.add(new SqlPanel(),   CARD_SQL);
+
+        // Status bar
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 10));
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.ITALIC));
+
+        setLayout(new BorderLayout());
+        add(toolbar,     BorderLayout.NORTH);
+        add(cardPanel,   BorderLayout.CENTER);
+        add(statusLabel, BorderLayout.SOUTH);
+
+        // Show first card
+        cardLayout.show(cardPanel, CARD_MEMBERS);
+    }
+
+    //Nav Listeners
+    private void wireNavListeners() {
+
+        navMembersBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_MEMBERS);   // flip to Members card
+            styleNavButton(navMembersBtn, true);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Members form");
+        });
+
+        navEventsBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_EVENTS);   // flip to Members card
+            styleNavButton(navEventsBtn, true);
+            styleNavButton(navMembersBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Events form");
+        });
+
+        navSpeakersBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_SPEAKERS);   // flip to Speakers card
+            styleNavButton(navSpeakersBtn, true);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navMembersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Speakers form");
+        });
+
+        navDuesBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_DUES);   // flip to Dues card
+            styleNavButton(navDuesBtn, true);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navMembersBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Dues form");
+        });
+
+        navSqlBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_SQL);     // flip to SQL Runner card
+            styleNavButton(navSqlBtn,   true);
+            styleNavButton(navMembersBtn, false);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            setStatus("SQL Runner");
+        });
+    }
+    //Toolbar button styling
+    private void styleNavButton(JButton btn, boolean active) {
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setOpaque(true);
+        btn.setFont(btn.getFont().deriveFont(Font.BOLD, 13f));
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(active ? new Color(0, 122, 204) : new Color(45, 45, 48));
+    }
+
+    //Helpers
+    Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+    }
+    void setStatus(String msg)    { statusLabel.setText(msg); }
+    void showError(String msg)    { JOptionPane.showMessageDialog(this, msg, "Error",      JOptionPane.ERROR_MESSAGE); }
+    void showWarning(String msg)  { JOptionPane.showMessageDialog(this, msg, "Validation", JOptionPane.WARNING_MESSAGE); }
+
+
+    class MembersPanel extends JPanel {
+
+        private final JTextField memberIdField    = new JTextField(5);
+        private final JTextField mFNameField = new JTextField(10);
+        private final JTextField mLNameField = new JTextField(10);
+        private final JTextField mEmailField = new JTextField(10);
+        private final JTextField majorField = new JTextField(10);
+        private final JTextField statusField = new JTextField(10);
+        private final JTextField mStreetField = new JTextField(10);
+        private final JTextField mCityField = new JTextField(10);
+        private final JTextField mStateField = new JTextField(10);
+        private final JTextField mZipField = new JTextField(5);
+        private final JTextField startDateField = new JTextField(10);
+        private final JTextField endDateField = new JTextField(10);
+
+        private final JButton insertBtn = new JButton("Insert");
+        private final JButton searchBtn = new JButton("Search");
+        private final JButton updateBtn = new JButton("Update");
+        private final JButton deleteBtn = new JButton("Delete");
+        private final JButton clearBtn  = new JButton("Clear");
+        private final JButton loadBtn   = new JButton("Load All");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel(
+                new String[]{"ID", "First Name", "Last Name", "Email", "Major", "Status", "Street Address", "City", "State", "Zip", "Start Date","End Date"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        private final JTable table = new JTable(tableModel);
+
+        MembersPanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Member Record"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "ID (for search / update / delete):", memberIdField);
+            addRow(form, g, 1, "First Name:", mFNameField);
+            addRow(form, g, 2, "Last Name:", mLNameField);
+            addRow(form, g, 3, "Email:", mEmailField);
+            addRow(form, g, 4, "Major:", majorField);
+            addRow(form, g, 5, "Status:", statusField);
+            addRow(form, g, 6, "Street Address:", mStreetField);
+            addRow(form, g, 7, "City:", mCityField);
+            addRow(form, g, 8, "State:", mStateField);
+            addRow(form, g, 9, "Zip:", mZipField);
+            addRow(form, g, 10, "Start Date:", startDateField);
+            addRow(form, g, 11, "End Date:", endDateField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // INSERT
+            insertBtn.addActionListener(e -> {
+                String mFName  = mFNameField.getText().trim();
+                String mLName  = mLNameField.getText().trim();
+                String mEmail = mEmailField.getText().trim();
+                String major  = majorField.getText().trim();
+                String status  = statusField.getText().trim();
+                String mStreet  = mStreetField.getText().trim();
+                String mCity  = mCityField.getText().trim();
+                String mState  = mStateField.getText().trim();
+                String mZip  = mZipField.getText().trim();
+                Date startDate  = Date.valueOf(startDateField.getText());
+                Date endDate  = Date.valueOf(endDateField.getText());
+
+
+                if (mFName.isEmpty() || mEmail.isEmpty()) {
+                    showWarning("Name and Email are required.");
+                    return;
+                }
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "INSERT INTO Members (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    ps.setString(1, mFName);
+                    ps.setString(2, mLName);
+                    ps.setString(3, mEmail);
+                    ps.setString(4, major);
+                    ps.setString(5, status);
+                    ps.setString(6, mStreet);
+                    ps.setString(7, mCity);
+                    ps.setString(8, mState);
+                    ps.setString(9, mZip);
+                    ps.setDate(10, startDate);
+                    ps.setDate(11, endDate);
+                    ps.executeUpdate();
+                    setStatus("Member inserted.");
+                    clearFields();
+                    loadAll();
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH
+            searchBtn.addActionListener(e -> {
+                String idText = memberIdField.getText().trim();
+                if (idText.isEmpty()) { loadAll(); return; }
+                if (!validId(idText))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Members WHERE MemberId = ?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("MemberId"), rs.getString("MFName"),
+                                rs.getString("MLName"), rs.getString("MEmail"), rs.getString("Major"),
+                                rs.getString("Status"), rs.getString("MStreet"), rs.getString("MCity"),
+                                rs.getString("MState"), rs.getString("mZip"), rs.getDate("StartDate"),
+                                rs.getDate("EndDate")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + idText);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // UPDATE
+            updateBtn.addActionListener(e -> {
+                String idText = memberIdField.getText().trim();
+                String mFName   = mFNameField.getText().trim();
+                String mLName  = mLNameField.getText().trim();
+                String mEmail   = mEmailField.getText().trim();
+                String major  = majorField.getText().trim();
+                String status   = statusField.getText().trim();
+                String mStreet  = mStreetField.getText().trim();
+                String mCity   = mCityField.getText().trim();
+                String mState  = mStateField.getText().trim();
+                String mZip   = mZipField.getText().trim();
+                Date startDate  = Date.valueOf(startDateField.getText());
+                Date endDate  = Date.valueOf(endDateField.getText());
+
+                if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
+                if (!validId(idText)) return;
+                if (mFName.isEmpty() || mEmail.isEmpty()) { showWarning("First Name and Email required."); return; }
+                if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "UPDATE Members SET MFName=?, MLName=?, MEmail=?, Major=?, Status=?, MStreet=?, MCity=?, MState=?, MZip=?, StartDate=?, EndDate=? WHERE MemberId=?")) {
+                    ps.setString(1, mFName);
+                    ps.setString(2, mLName);
+                    ps.setString(3, mEmail);
+                    ps.setString(4, major);
+                    ps.setString(5, status);
+                    ps.setString(6, mStreet);
+                    ps.setString(7, mCity);
+                    ps.setString(8, mState);
+                    ps.setString(9, mZip);
+                    ps.setDate(10, startDate);
+                    ps.setDate(11, endDate);
+                    ps.setInt(12, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // DELETE
+            deleteBtn.addActionListener(e -> {
+                String idText = memberIdField.getText().trim();
+                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText))   return;
+                if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM members WHERE memberId=?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                memberIdField.setText(tableModel.getValueAt(row, 0).toString());
+                mFNameField.setText(tableModel.getValueAt(row, 1).toString());
+                mLNameField.setText(tableModel.getValueAt(row, 2).toString());
+                mEmailField.setText(tableModel.getValueAt(row, 3).toString());
+                majorField.setText(tableModel.getValueAt(row, 4).toString());
+                statusField.setText(tableModel.getValueAt(row, 5).toString());
+                mStreetField.setText(tableModel.getValueAt(row, 6).toString());
+                mCityField.setText(tableModel.getValueAt(row, 7).toString());
+                mStateField.setText(tableModel.getValueAt(row, 8).toString());
+                mZipField.setText(tableModel.getValueAt(row, 9).toString());
+                startDateField.setText(tableModel.getValueAt(row, 10).toString());
+                endDateField.setText(tableModel.getValueAt(row, 11).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT id, name, email FROM users ORDER BY id")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("MemberId"), rs.getString("MFName"),
+                            rs.getString("MLName"), rs.getString("MEmail"), rs.getString("Major"),
+                            rs.getString("Status"), rs.getString("MStreet"), rs.getString("MCity"),
+                            rs.getString("MState"), rs.getString("MZip"), rs.getDate("StartDate"),
+                            rs.getDate("EndDate")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " member(s).");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            memberIdField.setText(""); mFNameField.setText(""); mLNameField.setText("");
+            mEmailField.setText(""); majorField.setText(""); statusField.setText("");
+            mStreetField.setText(""); mCityField.setText(""); mStateField.setText("");
+            mZipField.setText(""); startDateField.setText(""); endDateField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
+        }
+    }
+
+    class EventsPanel extends JPanel {
+
+        private final JTextField eventIdField    = new JTextField(5);
+        private final JTextField speakerIdField = new JTextField(10);
+        private final JTextField eStreetField = new JTextField(10);
+        private final JTextField eCityField = new JTextField(10);
+        private final JTextField eStateField = new JTextField(10);
+        private final JTextField eZipField = new JTextField(5);
+        private final JTextField eDateField = new JTextField(10);
+        private final JTextField costField = new JTextField(10);
+
+        private final JButton insertBtn = new JButton("Insert");
+        private final JButton searchBtn = new JButton("Search");
+        private final JButton updateBtn = new JButton("Update");
+        private final JButton deleteBtn = new JButton("Delete");
+        private final JButton clearBtn  = new JButton("Clear");
+        private final JButton loadBtn   = new JButton("Load All");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel(
+                new String[]{"ID", "Speaker Id", "Street Address", "City", "State", "Zip", "Date", "Cost"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        private final JTable table = new JTable(tableModel);
+
+        EventsPanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Event Record"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "ID (for search / update / delete):", eventIdField);
+            addRow(form, g, 1, "Speaker Id:", speakerIdField);
+            addRow(form, g, 2, "Street Address:", eStreetField);
+            addRow(form, g, 3, "City:", eCityField);
+            addRow(form, g, 4, "State:", eStateField);
+            addRow(form, g, 5, "Zip:", eZipField);
+            addRow(form, g, 6, "Event Date:", eDateField);
+            addRow(form, g, 7, "Cost:", costField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // INSERT
+            insertBtn.addActionListener(e -> {
+                String speakerId  = speakerIdField.getText().trim();
+                String eStreet  = eStreetField.getText().trim();
+                String eCity  = eCityField.getText().trim();
+                String eState  = eStateField.getText().trim();
+                String eZip  = eZipField.getText().trim();
+                Date eDate = Date.valueOf(eDateField.getText());
+                double cost = Double.parseDouble(costField.getText());
+
+
+                if (eStreet.isEmpty() || eCity.isEmpty()) {
+                    showWarning("Street and City are required.");
+                    return;
+                }
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "INSERT INTO Members (SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                    ps.setInt(1, Integer.parseInt(speakerId));
+                    ps.setString(2, eStreet);
+                    ps.setString(3, eCity);
+                    ps.setString(4, eState);
+                    ps.setString(5, eZip);
+                    ps.setDate(6, eDate);
+                    ps.setDouble(7, cost);
+                    ps.executeUpdate();
+                    setStatus("Event inserted.");
+                    clearFields();
+                    loadAll();
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH
+            searchBtn.addActionListener(e -> {
+                String idText = eventIdField.getText().trim();
+                if (idText.isEmpty()) { loadAll(); return; }
+                if (!validId(idText))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT EventId, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Events WHERE EventId = ?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getInt("SpeakerId"),
+                                rs.getString("EStreet"), rs.getString("ECity"), rs.getString("EState"),
+                                rs.getString("EZip"), rs.getDate("EDate"), rs.getDouble("Cost")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + idText);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // UPDATE
+            updateBtn.addActionListener(e -> {
+                String idText = eventIdField.getText().trim();
+                String speakerId   = speakerIdField.getText().trim();
+                String eStreet  = eStreetField.getText().trim();
+                String eCity   = eCityField.getText().trim();
+                String eState  = eStateField.getText().trim();
+                String eZip   = eZipField.getText().trim();
+                Date eventDate = Date.valueOf(eDateField.getText());
+                double cost  = Double.parseDouble(costField.getText());
+
+                if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
+                if (!validId(idText)) return;
+                if (eStreet.isEmpty() || eCity.isEmpty()) { showWarning("First Name and Email required."); return; }
+                if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "UPDATE Members SET SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
+                    ps.setString(1, speakerId);
+                    ps.setString(2, eStreet);
+                    ps.setString(3, eCity);
+                    ps.setString(4, eState);
+                    ps.setString(5, eZip);
+                    ps.setDate(6, eventDate);
+                    ps.setDouble(7, cost);
+                    ps.setInt(8, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // DELETE
+            deleteBtn.addActionListener(e -> {
+                String idText = eventIdField.getText().trim();
+                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText))   return;
+                if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM events WHERE eventId=?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                eventIdField.setText(tableModel.getValueAt(row, 0).toString());
+                speakerIdField.setText(tableModel.getValueAt(row, 1).toString());
+                eStreetField.setText(tableModel.getValueAt(row, 2).toString());
+                eCityField.setText(tableModel.getValueAt(row, 3).toString());
+                eStateField.setText(tableModel.getValueAt(row, 4).toString());
+                eZipField.setText(tableModel.getValueAt(row, 5).toString());
+                eDateField.setText(tableModel.getValueAt(row, 6).toString());
+                costField.setText(tableModel.getValueAt(row, 7).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT EventId, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Events ORDER BY EventId")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("SpeakerId"),
+                            rs.getString("EStreet"), rs.getString("ECity"), rs.getString("EState"),
+                            rs.getString("EZip"), rs.getDate("EDate"), rs.getDouble("Cost")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " event(s).");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            eventIdField.setText(""); speakerIdField.setText("");
+            eStreetField.setText(""); eCityField.setText(""); eStateField.setText("");
+            eZipField.setText(""); eDateField.setText(""); costField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
+        }
+    }
+
+    class SpeakersPanel extends JPanel {
+
+        private final JTextField speakerIdField = new JTextField(5);
+        private final JTextField sFNameField = new JTextField(10);
+        private final JTextField sLNameField = new JTextField(10);
+        private final JTextField sEmailField = new JTextField(10);
+        private final JTextField titleField = new JTextField(10);
+        private final JTextField industryField = new JTextField(10);
+        private final JTextField sStreetField = new JTextField(10);
+        private final JTextField sCityField = new JTextField(10);
+        private final JTextField sStateField = new JTextField(10);
+        private final JTextField sZipField = new JTextField(5);
+        private final JTextField sCostField = new JTextField(10);
+
+        private final JButton insertBtn = new JButton("Insert");
+        private final JButton searchBtn = new JButton("Search");
+        private final JButton updateBtn = new JButton("Update");
+        private final JButton deleteBtn = new JButton("Delete");
+        private final JButton clearBtn  = new JButton("Clear");
+        private final JButton loadBtn   = new JButton("Load All");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel(
+                new String[]{"SpeakerId", "First Name", "Last Name", "Email", "Title", "Industry", "Street Address", "City", "State", "Zip", "Cost"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        private final JTable table = new JTable(tableModel);
+
+        SpeakersPanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Speaker Record"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "ID (for search / update / delete):", speakerIdField);
+            addRow(form, g, 1, "First Name:", sFNameField);
+            addRow(form, g, 2, "Last Name:", sLNameField);
+            addRow(form, g, 3, "Email:", sEmailField);
+            addRow(form, g, 4, "Title:", titleField);
+            addRow(form, g, 5, "Industry:", industryField);
+            addRow(form, g, 6, "Street Address:", sStreetField);
+            addRow(form, g, 7, "City:", sCityField);
+            addRow(form, g, 8, "State:", sStateField);
+            addRow(form, g, 9, "Zip:", sZipField);
+            addRow(form, g, 10, "Cost:", sCostField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // INSERT
+            insertBtn.addActionListener(e -> {
+                String sFName  = sFNameField.getText().trim();
+                String sLName = sLNameField.getText().trim();
+                String sEmail = sEmailField.getText().trim();
+                String title  = titleField.getText().trim();
+                String industry  = industryField.getText().trim();
+                String sStreet = sStreetField.getText().trim();
+                String sCity = sCityField.getText().trim();
+                String sState = sStateField.getText().trim();
+                String sZip = sZipField.getText().trim();
+                double sCost  = Double.parseDouble(sCostField.getText());
+
+
+                if (sFName.isEmpty() || sEmail.isEmpty()) {
+                    showWarning("Name and Email are required.");
+                    return;
+                }
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "INSERT INTO Speakers (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    ps.setString(1, sFName);
+                    ps.setString(2, sLName);
+                    ps.setString(3, sEmail);
+                    ps.setString(4, title);
+                    ps.setString(5, industry);
+                    ps.setString(6, sStreet);
+                    ps.setString(7, sCity);
+                    ps.setString(8, sState);
+                    ps.setString(9, sZip);
+                    ps.setDouble(10, sCost);
+                    ps.executeUpdate();
+                    setStatus("Speaker inserted.");
+                    clearFields();
+                    loadAll();
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH
+            searchBtn.addActionListener(e -> {
+                String idText = speakerIdField.getText().trim();
+                if (idText.isEmpty()) { loadAll(); return; }
+                if (!validId(idText))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT SpeakerId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Speakers WHERE SpeakerId = ?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("SpeakerId"), rs.getString("SFName"),
+                                rs.getString("SLName"), rs.getString("SEmail"), rs.getString("Title"),
+                                rs.getString("Industry"), rs.getString("SStreet"), rs.getString("SCity"),
+                                rs.getString("SState"), rs.getString("SZip"), rs.getDouble("SCost")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + idText);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // UPDATE
+            updateBtn.addActionListener(e -> {
+                String idText = speakerIdField.getText().trim();
+                String sFName = sFNameField.getText().trim();
+                String sLName = sLNameField.getText().trim();
+                String sEmail = sEmailField.getText().trim();
+                String title  = titleField.getText().trim();
+                String industry   = industryField.getText().trim();
+                String sStreet = sStreetField.getText().trim();
+                String sCity = sCityField.getText().trim();
+                String sState = sStateField.getText().trim();
+                String sZip = sZipField.getText().trim();
+                double sCost = Double.parseDouble(sCostField.getText());
+
+                if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
+                if (!validId(idText)) return;
+                if (sFName.isEmpty() || sEmail.isEmpty()) { showWarning("First Name and Email required."); return; }
+                if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "UPDATE Speakers SET SFName=?, SLName=?, SEmail=?, Title=?, Industry=?, SStreet=?, SCity=?, SState=?, SZip=?, SCost=? WHERE SpeakerId=?")) {
+                    ps.setString(1, sFName);
+                    ps.setString(2, sLName);
+                    ps.setString(3, sEmail);
+                    ps.setString(4, title);
+                    ps.setString(5, industry);
+                    ps.setString(6, sStreet);
+                    ps.setString(7, sCity);
+                    ps.setString(8, sState);
+                    ps.setString(9, sZip);
+                    ps.setDouble(10, sCost);
+                    ps.setInt(11, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // DELETE
+            deleteBtn.addActionListener(e -> {
+                String idText = speakerIdField.getText().trim();
+                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText))   return;
+                if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM speakers WHERE speakerId=?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                speakerIdField.setText(tableModel.getValueAt(row, 0).toString());
+                sFNameField.setText(tableModel.getValueAt(row, 1).toString());
+                sLNameField.setText(tableModel.getValueAt(row, 2).toString());
+                sEmailField.setText(tableModel.getValueAt(row, 3).toString());
+                titleField.setText(tableModel.getValueAt(row, 4).toString());
+                industryField.setText(tableModel.getValueAt(row, 5).toString());
+                sStreetField.setText(tableModel.getValueAt(row, 6).toString());
+                sCityField.setText(tableModel.getValueAt(row, 7).toString());
+                sStateField.setText(tableModel.getValueAt(row, 8).toString());
+                sZipField.setText(tableModel.getValueAt(row, 9).toString());
+                sCostField.setText(tableModel.getValueAt(row, 10).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM speakers ORDER BY speakerId")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("SpeakerId"), rs.getString("SFName"),
+                            rs.getString("SLName"), rs.getString("SEmail"), rs.getString("Title"),
+                            rs.getString("Industry"), rs.getString("SStreet"), rs.getString("SCity"),
+                            rs.getString("SState"), rs.getString("SZip"), rs.getDate("SCost")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " speaker(s).");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            speakerIdField.setText(""); sFNameField.setText(""); sLNameField.setText("");
+            sEmailField.setText(""); titleField.setText(""); industryField.setText("");
+            sStreetField.setText(""); sCityField.setText(""); sStateField.setText("");
+            sZipField.setText(""); sCostField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
+        }
+    }
+
+    class DuesPanel extends JPanel {
+
+        private final JTextField dueIdField = new JTextField(5);
+        private final JTextField memberIdField = new JTextField(10);
+        private final JTextField dDateField = new JTextField(10);
+        private final JTextField amountField = new JTextField(10);
+
+        private final JButton insertBtn = new JButton("Insert");
+        private final JButton searchBtn = new JButton("Search");
+        private final JButton updateBtn = new JButton("Update");
+        private final JButton deleteBtn = new JButton("Delete");
+        private final JButton clearBtn  = new JButton("Clear");
+        private final JButton loadBtn   = new JButton("Load All");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel(
+                new String[]{"DueId", "Member Id", "Date", "Amount"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        private final JTable table = new JTable(tableModel);
+
+        DuesPanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Due Record"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "ID (for search / update / delete):", dueIdField);
+            addRow(form, g, 1, "Member Id:", memberIdField);
+            addRow(form, g, 2, "Event Date:", dDateField);
+            addRow(form, g, 3, "Cost:", amountField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // INSERT
+            insertBtn.addActionListener(e -> {
+                String memberId = memberIdField.getText().trim();
+                Date dDate = Date.valueOf(dDateField.getText());
+                double amount = Double.parseDouble(amountField.getText());
+
+
+                if (memberId.isEmpty()) {
+                    showWarning("MemberId is required.");
+                    return;
+                }
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "INSERT INTO Dues (MemberId, DDate, Amount) VALUES (?, ?, ?)")) {
+                    ps.setInt(1, Integer.parseInt(memberId));
+                    ps.setDate(2, dDate);
+                    ps.setDouble(3, amount);
+                    ps.executeUpdate();
+                    setStatus("Event inserted.");
+                    clearFields();
+                    loadAll();
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH
+            searchBtn.addActionListener(e -> {
+                String idText = dueIdField.getText().trim();
+                if (idText.isEmpty()) { loadAll(); return; }
+                if (!validId(idText))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT DueId, MemberId, DDate, Amount FROM Dues WHERE DueId = ?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("DueId"), rs.getInt("MemberId"),
+                                rs.getDate("DDate"), rs.getDouble("Amount")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + idText);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // UPDATE
+            updateBtn.addActionListener(e -> {
+                String idText = dueIdField.getText().trim();
+                String memberId = memberIdField.getText().trim();
+                Date dDate = Date.valueOf(dDateField.getText());
+                double amount  = Double.parseDouble(amountField.getText());
+
+                if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
+                if (!validId(idText)) return;
+                if (memberId.isEmpty() ) { showWarning("MemberId required."); return; }
+                if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "UPDATE Dues SET MemberId=?, DDate=?, Amount=? WHERE DueId=?")) {
+                    ps.setString(1, memberId);
+                    ps.setDate(2, dDate);
+                    ps.setDouble(3, amount);
+                    ps.setInt(4, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // DELETE
+            deleteBtn.addActionListener(e -> {
+                String idText = dueIdField.getText().trim();
+                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText))   return;
+                if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM Dues WHERE DueId=?")) {
+                    ps.setInt(1, Integer.parseInt(idText));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                dueIdField.setText(tableModel.getValueAt(row, 0).toString());
+                memberIdField.setText(tableModel.getValueAt(row, 1).toString());
+                dDateField.setText(tableModel.getValueAt(row, 2).toString());
+                amountField.setText(tableModel.getValueAt(row, 3).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT DueId, MemberId, DDate, Amount FROM Dues ORDER BY DueId")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("DueId"), rs.getString("MemberId"),
+                            rs.getDate("DDate"), rs.getDouble("Amount")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " due(s).");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            dueIdField.setText(""); memberIdField.setText("");
+            dDateField.setText(""); amountField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
+        }
+    }
+
+    class SqlPanel extends JPanel {
+
+        private final JTextArea  queryArea   = new JTextArea(6, 60);
+        private final JButton    runBtn      = new JButton("▶  Run Query");
+        private final JButton    clearBtn    = new JButton("Clear");
+        private final JLabel     rowCountLabel = new JLabel(" ");
+        private final DefaultTableModel tableModel = new DefaultTableModel();
+        private final JTable     resultTable = new JTable(tableModel);
+
+        SqlPanel() {
+            setLayout(new BorderLayout(0, 8));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+        }
+
+        private void buildUI() {
+            // Query input
+            queryArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+            queryArea.setLineWrap(true);
+            queryArea.setText("SELECT * FROM members;");
+            JScrollPane queryScroll = new JScrollPane(queryArea);
+            queryScroll.setBorder(BorderFactory.createTitledBorder("SQL Query"));
+
+            // Buttons row
+            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+            btnRow.add(runBtn);
+            btnRow.add(clearBtn);
+            btnRow.add(rowCountLabel);
+
+            JPanel top = new JPanel(new BorderLayout(0, 4));
+            top.add(queryScroll, BorderLayout.CENTER);
+            top.add(btnRow,      BorderLayout.SOUTH);
+
+            // Results table
+            resultTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            resultTable.setRowHeight(24);
+            JScrollPane resultScroll = new JScrollPane(resultTable);
+            resultScroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,          BorderLayout.NORTH);
+            add(resultScroll, BorderLayout.CENTER);
+        }
+
+        // ── SQL Runner listeners ───────────────────────────────────────────────
+        private void wireListeners() {
+
+            // RUN QUERY
+            runBtn.addActionListener(e -> {
+                String sql = queryArea.getText().trim();
+                if (sql.isEmpty()) { showWarning("Enter a SQL query."); return; }
+
+                // Determine statement type: SELECT vs DML (INSERT/UPDATE/DELETE/DDL)
+                boolean isSelect = sql.toUpperCase().startsWith("SELECT") ||
+                        sql.toUpperCase().startsWith("WITH");
+
+                try (Connection conn = getConnection()) {
+
+                    if (isSelect) {
+                        // ── SELECT: display rows in table ──────────────────────
+                        try (PreparedStatement ps = conn.prepareStatement(sql);
+                             ResultSet rs = ps.executeQuery()) {
+
+                            tableModel.setRowCount(0);
+                            tableModel.setColumnCount(0);
+
+                            // Build columns from ResultSet metadata
+                            ResultSetMetaData meta = rs.getMetaData();
+                            int colCount = meta.getColumnCount();
+                            for (int i = 1; i <= colCount; i++)
+                                tableModel.addColumn(meta.getColumnName(i));
+
+                            // Populate rows
+                            int rowCount = 0;
+                            while (rs.next()) {
+                                Object[] row = new Object[colCount];
+                                for (int i = 1; i <= colCount; i++)
+                                    row[i - 1] = rs.getObject(i);
+                                tableModel.addRow(row);
+                                rowCount++;
+                            }
+
+                            rowCountLabel.setText(rowCount + " row(s) returned");
+                            setStatus("Query executed — " + rowCount + " row(s).");
+                        }
+
+                    } else {
+                        // ── DML / DDL: execute update ──────────────────────────
+                        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                            int affected = ps.executeUpdate();
+                            tableModel.setRowCount(0);
+                            tableModel.setColumnCount(0);
+                            tableModel.addColumn("Result");
+                            tableModel.addRow(new Object[]{affected + " row(s) affected"});
+                            rowCountLabel.setText(affected + " row(s) affected");
+                            setStatus("Statement executed — " + affected + " row(s) affected.");
+                        }
+                    }
+
+                } catch (SQLException ex) {
+                    // Show SQL error in the results table for easy reading
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+                    tableModel.addColumn("Error");
+                    tableModel.addRow(new Object[]{ex.getMessage()});
+                    rowCountLabel.setText("Error");
+                    setStatus("SQL error — see results table.");
+                }
+            });
+
+            // Ctrl+Enter also runs the query (keyboard shortcut)
+            queryArea.getInputMap().put(
+                    KeyStroke.getKeyStroke("control ENTER"), "runQuery");
+            queryArea.getActionMap().put(
+                    "runQuery", new AbstractAction() {
+                        @Override public void actionPerformed(java.awt.event.ActionEvent e) {
+                            runBtn.doClick();
+                        }
+                    });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> {
+                queryArea.setText("");
+                tableModel.setRowCount(0);
+                tableModel.setColumnCount(0);
+                rowCountLabel.setText(" ");
+                setStatus("Cleared.");
+            });
+        }
+    }
 }
