@@ -38,7 +38,7 @@ public class GuiApp extends JFrame{
     public GuiApp() {
         super("SONAR App");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(800, 580);
+        setSize(800, 700);
         setLocationRelativeTo(null);
 
         initDatabase();
@@ -356,7 +356,7 @@ public class GuiApp extends JFrame{
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "DELETE FROM member WHERE memberId=?")) {
+                             "DELETE FROM Member WHERE memberId=?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -393,7 +393,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT MemberId, MFName, MLName, MEmail, Makor, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member ORDER BY MemberId")) {
+                 ResultSet rs   = stmt.executeQuery("SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member ORDER BY MemberId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -765,7 +765,7 @@ public class GuiApp extends JFrame{
                 }
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Speaker (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                             "INSERT INTO Speaker (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                     ps.setString(1, sFName);
                     ps.setString(2, sLName);
                     ps.setString(3, sEmail);
@@ -813,7 +813,7 @@ public class GuiApp extends JFrame{
                 String sLName = sLNameField.getText().trim();
                 String sEmail = sEmailField.getText().trim();
                 String title  = titleField.getText().trim();
-                String industry   = industryField.getText().trim();
+                String industry = industryField.getText().trim();
                 String sStreet = sStreetField.getText().trim();
                 String sCity = sCityField.getText().trim();
                 String sState = sStateField.getText().trim();
@@ -895,7 +895,7 @@ public class GuiApp extends JFrame{
                     tableModel.addRow(new Object[]{rs.getInt("SpeakerId"), rs.getString("SFName"),
                             rs.getString("SLName"), rs.getString("SEmail"), rs.getString("Title"),
                             rs.getString("Industry"), rs.getString("SStreet"), rs.getString("SCity"),
-                            rs.getString("SState"), rs.getString("SZip"), rs.getDate("SCost")});
+                            rs.getString("SState"), rs.getString("SZip"), rs.getDouble("SCost")});
                     n++;
                 }
                 setStatus("Loaded " + n + " Speaker(s).");
@@ -992,7 +992,7 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
-                String memberId = dueIdField.getText().trim();
+                String memberId = memberIdField.getText().trim();
                 Date dDate = Date.valueOf(dDateField.getText());
                 double amount = Double.parseDouble(amountField.getText());
 
@@ -1152,7 +1152,7 @@ public class GuiApp extends JFrame{
             // Query input
             queryArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
             queryArea.setLineWrap(true);
-            queryArea.setText("SELECT * FROM members;");
+            queryArea.setText("SELECT * FROM Member;");
             JScrollPane queryScroll = new JScrollPane(queryArea);
             queryScroll.setBorder(BorderFactory.createTitledBorder("SQL Query"));
 
