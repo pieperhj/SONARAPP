@@ -15,6 +15,7 @@ public class GuiApp extends JFrame{
     private static final String CARD_EVENTS = "EVENTS";
     private static final String CARD_SPEAKERS = "SPEAKERS";
     private static final String CARD_DUES = "DUES";
+    private static final String CARD_ATTENDANCE = "ATTENDANCE";
     private static final String CARD_SQL   = "SQL";
 
     // CardLayout + its container
@@ -26,6 +27,7 @@ public class GuiApp extends JFrame{
     private final JButton navEventsBtn = new JButton("👤  Events");
     private final JButton navSpeakersBtn = new JButton("👤  Speakers");
     private final JButton navDuesBtn = new JButton("👤  Dues");
+    private final JButton navAttendanceBtn = new JButton("👤  Attendance");
     private final JButton navSqlBtn   = new JButton("⌨  SQL Runner");
 
     // Status bar (shared across all forms)
@@ -62,6 +64,7 @@ public class GuiApp extends JFrame{
         styleNavButton(navEventsBtn,   false);
         styleNavButton(navSpeakersBtn,   false);
         styleNavButton(navDuesBtn,   false);
+        styleNavButton(navAttendanceBtn,   false);
         styleNavButton(navSqlBtn,   false);
         toolbar.add(navMembersBtn);
         toolbar.addSeparator(new Dimension(4, 0));
@@ -71,6 +74,8 @@ public class GuiApp extends JFrame{
         toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navDuesBtn);
         toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navAttendanceBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navSqlBtn);
 
         // Register each form as a named card
@@ -78,6 +83,7 @@ public class GuiApp extends JFrame{
         cardPanel.add(new EventsPanel(), CARD_EVENTS);
         cardPanel.add(new SpeakersPanel(), CARD_SPEAKERS);
         cardPanel.add(new DuesPanel(), CARD_DUES);
+        cardPanel.add(new AttendancePanel(), CARD_ATTENDANCE);
         cardPanel.add(new SqlPanel(),   CARD_SQL);
 
         // Status bar
@@ -102,6 +108,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navEventsBtn,   false);
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Members form");
         });
@@ -112,6 +119,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navMembersBtn,   false);
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Events form");
         });
@@ -122,6 +130,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navEventsBtn,   false);
             styleNavButton(navMembersBtn,   false);
             styleNavButton(navDuesBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Speakers form");
         });
@@ -132,6 +141,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navEventsBtn,   false);
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navMembersBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Dues form");
         });
@@ -143,7 +153,19 @@ public class GuiApp extends JFrame{
             styleNavButton(navEventsBtn,   false);
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
             setStatus("SQL Runner");
+        });
+
+        navAttendanceBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_ATTENDANCE);     // flip to SQL Runner card
+            styleNavButton(navAttendanceBtn,   true);
+            styleNavButton(navMembersBtn, false);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Attendance");
         });
     }
     //Toolbar button styling
@@ -437,6 +459,7 @@ public class GuiApp extends JFrame{
     class EventsPanel extends JPanel {
 
         private final JTextField eventIdField    = new JTextField(5);
+        private final JTextField eNameField = new JTextField(5);
         private final JTextField speakerIdField = new JTextField(10);
         private final JTextField eStreetField = new JTextField(10);
         private final JTextField eCityField = new JTextField(10);
@@ -453,7 +476,7 @@ public class GuiApp extends JFrame{
         private final JButton loadBtn   = new JButton("Load All");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
-                new String[]{"ID", "Speaker Id", "Street Address", "City", "State", "Zip", "Date", "Cost"}, 0) {
+                new String[]{"Event ID", "Event Name", "Speaker ID", "Street Address", "City", "State", "Zip", "Date", "Cost"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
@@ -473,14 +496,15 @@ public class GuiApp extends JFrame{
             GridBagConstraints g = new GridBagConstraints();
             g.insets = new Insets(4, 6, 4, 6);
             g.anchor = GridBagConstraints.WEST;
-            addRow(form, g, 0, "ID (for search / update / delete):", eventIdField);
-            addRow(form, g, 1, "Speaker Id:", speakerIdField);
-            addRow(form, g, 2, "Street Address:", eStreetField);
-            addRow(form, g, 3, "City:", eCityField);
-            addRow(form, g, 4, "State:", eStateField);
-            addRow(form, g, 5, "Zip:", eZipField);
-            addRow(form, g, 6, "Event Date:", eDateField);
-            addRow(form, g, 7, "Cost:", costField);
+            addRow(form, g, 0, "Event ID (for search / update / delete):", eventIdField);
+            addRow(form, g, 1, "Event Name:", eNameField);
+            addRow(form, g, 2, "Speaker Id:", speakerIdField);
+            addRow(form, g, 3, "Street Address:", eStreetField);
+            addRow(form, g, 4, "City:", eCityField);
+            addRow(form, g, 5, "State:", eStateField);
+            addRow(form, g, 6, "Zip:", eZipField);
+            addRow(form, g, 7, "Event Date:", eDateField);
+            addRow(form, g, 8, "Cost:", costField);
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
@@ -506,6 +530,7 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                String eName  = eNameField.getText().trim();
                 String speakerId  = speakerIdField.getText().trim();
                 String eStreet  = eStreetField.getText().trim();
                 String eCity  = eCityField.getText().trim();
@@ -521,14 +546,15 @@ public class GuiApp extends JFrame{
                 }
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Event (SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-                    ps.setInt(1, Integer.parseInt(speakerId));
-                    ps.setString(2, eStreet);
-                    ps.setString(3, eCity);
-                    ps.setString(4, eState);
-                    ps.setString(5, eZip);
-                    ps.setDate(6, eDate);
-                    ps.setDouble(7, cost);
+                             "INSERT INTO Event (EName, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    ps.setString(1, eName);
+                    ps.setInt(2, Integer.parseInt(speakerId));
+                    ps.setString(3, eStreet);
+                    ps.setString(4, eCity);
+                    ps.setString(5, eState);
+                    ps.setString(6, eZip);
+                    ps.setDate(7, eDate);
+                    ps.setDouble(8, cost);
                     ps.executeUpdate();
                     setStatus("Event inserted.");
                     clearFields();
@@ -543,13 +569,13 @@ public class GuiApp extends JFrame{
                 if (!validId(idText))  return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "SELECT EventId, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Event WHERE EventId = ?")) {
+                             "SELECT EventId, EName, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Event WHERE EventId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
                     int n = 0;
                     while (rs.next()) {
-                        tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getInt("SpeakerId"),
+                        tableModel.addRow(new Object[]{rs.getInt("EventId"),  rs.getString("EName"), rs.getInt("SpeakerId"),
                                 rs.getString("EStreet"), rs.getString("ECity"), rs.getString("EState"),
                                 rs.getString("EZip"), rs.getDate("EDate"), rs.getDouble("Cost")});
                         n++;
@@ -561,6 +587,7 @@ public class GuiApp extends JFrame{
             // UPDATE
             updateBtn.addActionListener(e -> {
                 String idText = eventIdField.getText().trim();
+                String eName  = eNameField.getText().trim();
                 String speakerId   = speakerIdField.getText().trim();
                 String eStreet  = eStreetField.getText().trim();
                 String eCity   = eCityField.getText().trim();
@@ -575,15 +602,16 @@ public class GuiApp extends JFrame{
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "UPDATE Event SET SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
-                    ps.setString(1, speakerId);
-                    ps.setString(2, eStreet);
-                    ps.setString(3, eCity);
-                    ps.setString(4, eState);
-                    ps.setString(5, eZip);
-                    ps.setDate(6, eventDate);
-                    ps.setDouble(7, cost);
-                    ps.setInt(8, Integer.parseInt(idText));
+                             "UPDATE Event SET EName=?, SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
+                    ps.setString(1, eName);
+                    ps.setInt(2, Integer.parseInt(speakerId));
+                    ps.setString(3, eStreet);
+                    ps.setString(4, eCity);
+                    ps.setString(5, eState);
+                    ps.setString(6, eZip);
+                    ps.setDate(7, eventDate);
+                    ps.setDouble(8, cost);
+                    ps.setInt(9, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -618,24 +646,25 @@ public class GuiApp extends JFrame{
                 int row = table.getSelectedRow();
                 if (row < 0) return;
                 eventIdField.setText(tableModel.getValueAt(row, 0).toString());
-                speakerIdField.setText(tableModel.getValueAt(row, 1).toString());
-                eStreetField.setText(tableModel.getValueAt(row, 2).toString());
-                eCityField.setText(tableModel.getValueAt(row, 3).toString());
-                eStateField.setText(tableModel.getValueAt(row, 4).toString());
-                eZipField.setText(tableModel.getValueAt(row, 5).toString());
-                eDateField.setText(tableModel.getValueAt(row, 6).toString());
-                costField.setText(tableModel.getValueAt(row, 7).toString());
+                eNameField.setText(tableModel.getValueAt(row, 1).toString());
+                speakerIdField.setText(tableModel.getValueAt(row, 2).toString());
+                eStreetField.setText(tableModel.getValueAt(row, 3).toString());
+                eCityField.setText(tableModel.getValueAt(row, 4).toString());
+                eStateField.setText(tableModel.getValueAt(row, 5).toString());
+                eZipField.setText(tableModel.getValueAt(row, 6).toString());
+                eDateField.setText(tableModel.getValueAt(row, 7).toString());
+                costField.setText(tableModel.getValueAt(row, 8).toString());
             });
         }
 
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT EventId, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Event ORDER BY EventId")) {
+                 ResultSet rs   = stmt.executeQuery("SELECT EventId, EName, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Event ORDER BY EventId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
-                    tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("SpeakerId"),
+                    tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("EName"),  rs.getString("SpeakerId"),
                             rs.getString("EStreet"), rs.getString("ECity"), rs.getString("EState"),
                             rs.getString("EZip"), rs.getDate("EDate"), rs.getDouble("Cost")});
                     n++;
@@ -645,7 +674,7 @@ public class GuiApp extends JFrame{
         }
 
         private void clearFields() {
-            eventIdField.setText(""); speakerIdField.setText("");
+            eventIdField.setText(""); eNameField.setText(""); speakerIdField.setText("");
             eStreetField.setText(""); eCityField.setText(""); eStateField.setText("");
             eZipField.setText(""); eDateField.setText(""); costField.setText("");
             table.clearSelection();
@@ -1260,6 +1289,196 @@ public class GuiApp extends JFrame{
                 rowCountLabel.setText(" ");
                 setStatus("Cleared.");
             });
+        }
+    }
+
+    class AttendancePanel extends JPanel {
+
+        private final JTextField eventIdField = new JTextField(5);
+        private final JTextField memberIdField = new JTextField(10);
+
+        private final JButton insertBtn = new JButton("Insert");
+        private final JButton searchEventBtn = new JButton("Search Events");
+        private final JButton searchMemberBtn = new JButton("Search Members");
+        private final JButton deleteBtn = new JButton("Delete");
+        private final JButton clearBtn  = new JButton("Clear");
+        private final JButton loadBtn   = new JButton("Load All");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel(
+                new String[]{"Event Id","Event Name", "Member Id", "First Name", "Last Name"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        private final JTable table = new JTable(tableModel);
+
+        AttendancePanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Attendance Record"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "Event Id:", eventIdField);
+            addRow(form, g, 1, "Member Id:", memberIdField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{insertBtn, searchMemberBtn, searchEventBtn, deleteBtn, clearBtn, loadBtn})
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // INSERT
+            insertBtn.addActionListener(e -> {
+                String memberId = memberIdField.getText().trim();
+                String eventId = eventIdField.getText().trim();
+
+                if (memberId.isEmpty() || eventId.isEmpty()) {
+                    showWarning("MemberId and EventId are required.");
+                    return;
+                }
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "INSERT INTO Attends (MemberId, EventId) VALUES (?, ?)")) {
+                    ps.setInt(1, Integer.parseInt(memberId));
+                    ps.setInt(2, Integer.parseInt(eventId));
+                    ps.executeUpdate();
+                    setStatus("Attendance inserted.");
+                    clearFields();
+                    loadAll();
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH EVENTS
+            searchEventBtn.addActionListener(e -> {
+                String eventId = eventIdField.getText().trim();
+                if (eventId.isEmpty()) { loadAll(); return; }
+                if (!validId(eventId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member WHERE EventId = ?")) {
+                    ps.setInt(1, Integer.parseInt(eventId));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + eventId);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // SEARCH MEMBERS
+            searchMemberBtn.addActionListener(e -> {
+                String memberId = memberIdField.getText().trim();
+                if (memberId.isEmpty()) { loadAll(); return; }
+                if (!validId(memberId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member WHERE MemberId = ?")) {
+                    ps.setInt(1, Integer.parseInt(memberId));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    int n = 0;
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
+                        n++;
+                    }
+                    setStatus(n > 0 ? "Found " + n + " record(s)." : "No record for ID " + memberId);
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // DELETE
+            deleteBtn.addActionListener(e -> {
+                String eventId = eventIdField.getText().trim();
+                String memberId = memberIdField.getText().trim();
+                if (eventId.isEmpty() || memberId.isEmpty())  { showWarning("Enter both EventId and MemberId to delete."); return; }
+                if (!validId(eventId) || !validId(memberId))   return;
+                if (confirm("Delete record ID " + eventId + " " + memberId + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM Attends WHERE EventId=? AND MemberId=?")) {
+                    ps.setInt(1, Integer.parseInt(eventId));
+                    ps.setInt(2, Integer.parseInt(memberId));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + eventId + " " + memberId : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                eventIdField.setText(tableModel.getValueAt(row, 0).toString());
+                memberIdField.setText(tableModel.getValueAt(row, 2).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member ORDER BY EventId")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("EventId"),rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " Attendance.");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            eventIdField.setText(""); memberIdField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
         }
     }
 }
