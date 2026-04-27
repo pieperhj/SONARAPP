@@ -16,6 +16,7 @@ public class GuiApp extends JFrame{
     private static final String CARD_SPEAKERS = "SPEAKERS";
     private static final String CARD_DUES = "DUES";
     private static final String CARD_ATTENDANCE = "ATTENDANCE";
+    private static final String CARD_REPORTS = "REPORTS";
     private static final String CARD_SQL   = "SQL";
 
     // CardLayout + its container
@@ -28,6 +29,7 @@ public class GuiApp extends JFrame{
     private final JButton navSpeakersBtn = new JButton("👤  Speakers");
     private final JButton navDuesBtn = new JButton("👤  Dues");
     private final JButton navAttendanceBtn = new JButton("👤  Attendance");
+    private final JButton navReportsBtn = new JButton("👤  Reports");
     private final JButton navSqlBtn   = new JButton("⌨  SQL Runner");
 
     // Status bar (shared across all forms)
@@ -65,6 +67,7 @@ public class GuiApp extends JFrame{
         styleNavButton(navSpeakersBtn,   false);
         styleNavButton(navDuesBtn,   false);
         styleNavButton(navAttendanceBtn,   false);
+        styleNavButton(navReportsBtn,   false);
         styleNavButton(navSqlBtn,   false);
         toolbar.add(navMembersBtn);
         toolbar.addSeparator(new Dimension(4, 0));
@@ -76,6 +79,8 @@ public class GuiApp extends JFrame{
         toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navAttendanceBtn);
         toolbar.addSeparator(new Dimension(4, 0));
+        toolbar.add(navReportsBtn);
+        toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navSqlBtn);
 
         // Register each form as a named card
@@ -84,6 +89,7 @@ public class GuiApp extends JFrame{
         cardPanel.add(new SpeakersPanel(), CARD_SPEAKERS);
         cardPanel.add(new DuesPanel(), CARD_DUES);
         cardPanel.add(new AttendancePanel(), CARD_ATTENDANCE);
+        cardPanel.add(new ReportsPanel(), CARD_REPORTS);
         cardPanel.add(new SqlPanel(),   CARD_SQL);
 
         // Status bar
@@ -109,6 +115,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Members form");
         });
@@ -120,6 +127,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Events form");
         });
@@ -131,6 +139,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navMembersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Speakers form");
         });
@@ -142,6 +151,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navMembersBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Dues form");
         });
@@ -154,6 +164,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             setStatus("SQL Runner");
         });
 
@@ -164,8 +175,21 @@ public class GuiApp extends JFrame{
             styleNavButton(navEventsBtn,   false);
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
+            styleNavButton(navReportsBtn,   false);
             styleNavButton(navSqlBtn,   false);
             setStatus("Attendance");
+        });
+
+        navReportsBtn.addActionListener(e -> {
+            cardLayout.show(cardPanel, CARD_REPORTS);     // flip to SQL Runner card
+            styleNavButton(navReportsBtn,   true);
+            styleNavButton(navMembersBtn, false);
+            styleNavButton(navEventsBtn,   false);
+            styleNavButton(navSpeakersBtn,   false);
+            styleNavButton(navDuesBtn,   false);
+            styleNavButton(navAttendanceBtn,   false);
+            styleNavButton(navSqlBtn,   false);
+            setStatus("Reports");
         });
     }
     //Toolbar button styling
@@ -1434,6 +1458,252 @@ public class GuiApp extends JFrame{
 
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+
+            // Row click → populate form
+            table.getSelectionModel().addListSelectionListener(e -> {
+                if (e.getValueIsAdjusting()) return;
+                int row = table.getSelectedRow();
+                if (row < 0) return;
+                eventIdField.setText(tableModel.getValueAt(row, 0).toString());
+                memberIdField.setText(tableModel.getValueAt(row, 2).toString());
+            });
+        }
+
+        private void loadAll() {
+            try (Connection conn = getConnection();
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs   = stmt.executeQuery("SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member ORDER BY EventId")) {
+                tableModel.setRowCount(0);
+                int n = 0;
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{rs.getInt("EventId"),rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
+                    n++;
+                }
+                setStatus("Loaded " + n + " Attendance.");
+            } catch (SQLException ex) { showError(ex.getMessage()); }
+        }
+
+        private void clearFields() {
+            eventIdField.setText(""); memberIdField.setText("");
+            table.clearSelection();
+        }
+
+        private boolean validId(String t) {
+            try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
+            showWarning("ID must be a positive integer.");
+            return false;
+        }
+
+        private int confirm(String msg) {
+            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
+        }
+
+        private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
+            g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
+            p.add(new JLabel(label), g);
+            g.gridx = 1; g.weightx = 1; g.fill = GridBagConstraints.HORIZONTAL;
+            p.add(field, g);
+        }
+    }
+
+    class ReportsPanel extends JPanel {
+
+        private final JTextField eventIdField = new JTextField(5);
+        private final JTextField memberIdField = new JTextField(10);
+        private final JTextField speakerIdField = new JTextField(5);
+        private final JTextField statusField = new JTextField(10);
+        private final JTextField roleField = new JTextField(5);
+        private final JTextField majorField = new JTextField(10);
+        private final JTextField costField = new JTextField(10);
+        private final JTextField startDateField = new JTextField(5);
+        private final JTextField endDateField = new JTextField(10);
+
+        private final JButton perfectAttendanceBtn = new JButton("Perfect Attendance");
+        private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
+        private final JButton newSpeakersBtn = new JButton("New Speakers");
+        private final JButton majorContributionsBtn = new JButton("Contributions by Major");
+        private final JButton duesVsAttendanceBtn  = new JButton("Dues Vs Attendance");
+        private final JButton activeAttendanceBtn   = new JButton("Active Attendance");
+
+        private final DefaultTableModel tableModel = new DefaultTableModel();
+        private final JTable table = new JTable(tableModel);
+
+        ReportsPanel() {
+            setLayout(new BorderLayout(0, 6));
+            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            buildUI();
+            wireListeners();
+            loadAll();
+        }
+
+        private void buildUI() {
+            // Form
+            JPanel form = new JPanel(new GridBagLayout());
+            form.setBorder(BorderFactory.createTitledBorder("Reports"));
+            GridBagConstraints g = new GridBagConstraints();
+            g.insets = new Insets(4, 6, 4, 6);
+            g.anchor = GridBagConstraints.WEST;
+            addRow(form, g, 0, "Event Id:", eventIdField);
+            addRow(form, g, 1, "Member Id:", memberIdField);
+            addRow(form, g, 2, "Speaker Id:", speakerIdField);
+            addRow(form, g, 3, "Status:", statusField);
+            addRow(form, g, 4, "Role:", roleField);
+            addRow(form, g, 5, "Major:", majorField);
+            addRow(form, g, 6, "Cost:", costField);
+            addRow(form, g, 7, "Start Date:", startDateField);
+            addRow(form, g, 8, "End Date:", endDateField);
+
+            // Buttons
+            JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+            for (JButton b : new JButton[]{perfectAttendanceBtn, officersAttendanceBtn, newSpeakersBtn, majorContributionsBtn, duesVsAttendanceBtn, activeAttendanceBtn })
+                btns.add(b);
+
+            JPanel top = new JPanel(new BorderLayout());
+            top.add(form, BorderLayout.CENTER);
+            top.add(btns, BorderLayout.SOUTH);
+
+            // Table
+            table.setRowHeight(24);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            JScrollPane scroll = new JScrollPane(table);
+            scroll.setBorder(BorderFactory.createTitledBorder("Results"));
+
+            add(top,    BorderLayout.NORTH);
+            add(scroll, BorderLayout.CENTER);
+        }
+
+        // CRUD listeners
+        private void wireListeners() {
+
+            // PERFECT ATTENDANCE
+            perfectAttendanceBtn.addActionListener(e -> {
+                String memberId = memberIdField.getText().trim();
+                String eventId = eventIdField.getText().trim();
+                Date startDate = Date.valueOf(startDateField.getText());
+                Date endDate = Date.valueOf(endDateField.getText());
+
+                /*if (memberId.isEmpty() || eventId.isEmpty()) {
+                    showWarning("MemberId and EventId are required.");
+                    return;
+                }*/
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT MemberId, MFName, MLName FROM Member NATURAL JOIN Attends NATURAL JOIN (SELECT EventId FROM Event WHERE EDate BETWEEN ? AND ? ) AS Events GROUP BY MemberId, MFName, MLName HAVING count(*) = ((SELECT count(*) FROM Event WHERE EDate BETWEEN ? AND ? ))")) {
+
+                    ps.setDate(1, startDate);
+                    ps.setDate(2, endDate);
+                    ps.setDate(3, startDate);
+                    ps.setDate(4, endDate);
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Had Perfect Attendance");
+
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // OFFICER ATTENDANCE OF EVENTS
+            officersAttendanceBtn.addActionListener(e -> {
+                String eventId = eventIdField.getText().trim();
+                if (eventId.isEmpty()) { loadAll(); return; }
+                if (!validId(eventId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT RoleName, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member NATURAL JOIN Holds NATURAL JOIN Role WHERE EventId = ?")) {
+                    ps.setInt(1, Integer.parseInt(eventId));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // NEW SPEAKERS TARGET COST
+            newSpeakersBtn.addActionListener(e -> {
+                String cost = costField.getText().trim();
+                //if (!validId(speakerId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
+                    ps.setDouble(1, Double.parseDouble(costField.getText()));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CONTRIBUTIONS BY MAJOR
+            majorContributionsBtn.addActionListener(e -> {
+                String eventId = eventIdField.getText().trim();
+                String memberId = memberIdField.getText().trim();
+                if (eventId.isEmpty() || memberId.isEmpty())  { showWarning("Enter both EventId and MemberId to delete."); return; }
+                if (!validId(eventId) || !validId(memberId))   return;
+                if (confirm("Delete record ID " + eventId + " " + memberId + "?") != JOptionPane.YES_OPTION) return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "DELETE FROM Attends WHERE EventId=? AND MemberId=?")) {
+                    ps.setInt(1, Integer.parseInt(eventId));
+                    ps.setInt(2, Integer.parseInt(memberId));
+                    int rows = ps.executeUpdate();
+                    setStatus(rows > 0 ? "Deleted ID " + eventId + " " + memberId : "No record found.");
+                    if (rows > 0) { clearFields(); loadAll(); }
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // CLEAR
+            //clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+
+            // LOAD ALL
+            //loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
 
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
