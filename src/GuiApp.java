@@ -1577,8 +1577,6 @@ public class GuiApp extends JFrame{
 
             // PERFECT ATTENDANCE
             perfectAttendanceBtn.addActionListener(e -> {
-                String memberId = memberIdField.getText().trim();
-                String eventId = eventIdField.getText().trim();
                 Date startDate = Date.valueOf(startDateField.getText());
                 Date endDate = Date.valueOf(endDateField.getText());
 
@@ -1683,27 +1681,88 @@ public class GuiApp extends JFrame{
 
             // CONTRIBUTIONS BY MAJOR
             majorContributionsBtn.addActionListener(e -> {
-                String eventId = eventIdField.getText().trim();
-                String memberId = memberIdField.getText().trim();
-                if (eventId.isEmpty() || memberId.isEmpty())  { showWarning("Enter both EventId and MemberId to delete."); return; }
-                if (!validId(eventId) || !validId(memberId))   return;
-                if (confirm("Delete record ID " + eventId + " " + memberId + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "DELETE FROM Attends WHERE EventId=? AND MemberId=?")) {
-                    ps.setInt(1, Integer.parseInt(eventId));
-                    ps.setInt(2, Integer.parseInt(memberId));
-                    int rows = ps.executeUpdate();
-                    setStatus(rows > 0 ? "Deleted ID " + eventId + " " + memberId : "No record found.");
-                    if (rows > 0) { clearFields(); loadAll(); }
+                             "SELECT Major, SUM(Amount) AS Total FROM Member NATURAL JOIN Dues GROUP BY Major ORDER BY Total DESC;")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Contributions By Major");
                 } catch (SQLException ex) { showError(ex.getMessage()); }
             });
 
-            // CLEAR
-            //clearBtn.addActionListener(e -> { clearFields(); setStatus("Cleared."); });
+            // Dues vs Attendance
+            duesVsAttendanceBtn.addActionListener(e -> {
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT M.MemberId, MFName, MLName, COUNT(A.EventId) AS 'Events Attended' FROM Member AS M LEFT OUTER JOIN Dues AS D ON M.MemberId = D.MemberId" +
+                             " LEFT OUTER JOIN Attends AS A ON M.MemberId = A.MemberId WHERE D.DueId IS NULL GROUP BY M.MemberId, M.MFName, M.MLName HAVING Count(A.EventId) > 1")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
 
-            // LOAD ALL
-            //loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended without Dues");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // Last Year Attendance
+            activeAttendanceBtn.addActionListener(e -> {
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT MemberId, MFName, MLName FROM Member WHERE Status = 'Active' AND MemberId NOT IN  (SELECT A.MemberId FROM Attends AS A NATURAL JOIN Event WHERE EDate >= CURDATE() - INTERVAL 365 DAY)")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended without Dues");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
 
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
