@@ -717,6 +717,7 @@ public class GuiApp extends JFrame{
         private final JButton deleteBtn = new JButton("Delete");
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
+        private final JButton newSpeakersBtn = new JButton("New Speakers");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"SpeakerId", "First Name", "Last Name", "Email", "Title", "Industry", "Street Address", "City", "State", "Zip", "Cost"}, 0) {
@@ -753,7 +754,7 @@ public class GuiApp extends JFrame{
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
-            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn, newSpeakersBtn})
                 btns.add(b);
 
             JPanel top = new JPanel(new BorderLayout());
@@ -817,7 +818,7 @@ public class GuiApp extends JFrame{
                 if (!validId(idText))  return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
-                             "SELECT SpeakerId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Speaker WHERE SpeakerId = ?")) {
+                             "SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker WHERE SpeakerId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
@@ -893,6 +894,37 @@ public class GuiApp extends JFrame{
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
 
+            // NEW SPEAKERS TARGET COST
+            newSpeakersBtn.addActionListener(e -> {
+                String cost = sCostField.getText().trim();
+                //if (!validId(speakerId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
+                    ps.setDouble(1, Double.parseDouble(cost));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("New Speakers");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
                 if (e.getValueIsAdjusting()) return;
@@ -917,15 +949,24 @@ public class GuiApp extends JFrame{
                  Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker ORDER BY SpeakerId")) {
                 tableModel.setRowCount(0);
-                int n = 0;
+                tableModel.setColumnCount(0);
+
+                // Build columns from ResultSet metadata
+                ResultSetMetaData meta = rs.getMetaData();
+                int colCount = meta.getColumnCount();
+                for (int i = 1; i <= colCount; i++)
+                    tableModel.addColumn(meta.getColumnName(i));
+
+                // Populate rows
+                int rowCount = 0;
                 while (rs.next()) {
-                    tableModel.addRow(new Object[]{rs.getInt("SpeakerId"), rs.getString("SFName"),
-                            rs.getString("SLName"), rs.getString("SEmail"), rs.getString("Title"),
-                            rs.getString("Industry"), rs.getString("SStreet"), rs.getString("SCity"),
-                            rs.getString("SState"), rs.getString("SZip"), rs.getDouble("SCost")});
-                    n++;
+                    Object[] row = new Object[colCount];
+                    for (int i = 1; i <= colCount; i++)
+                        row[i - 1] = rs.getObject(i);
+                    tableModel.addRow(row);
+                    rowCount++;
                 }
-                setStatus("Loaded " + n + " Speaker(s).");
+                setStatus("New Speakers");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
 
