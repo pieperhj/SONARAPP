@@ -5,7 +5,7 @@ import java.sql.*;
 
 public class GuiApp extends JFrame{
 
-    // ── DB config ──────────────────────────────────────────────────────────────
+    // DB config
     private static final String DB_URL  = "jdbc:mysql://138.49.184.123:3306/byrne8370_SONAR";
     private static final String DB_USER = "pieper.hans";
     private static final String DB_PASS = "DHB7E-RkrS3JrgNdT";
@@ -17,11 +17,10 @@ public class GuiApp extends JFrame{
     private static final String CARD_DUES = "DUES";
     private static final String CARD_ATTENDANCE = "ATTENDANCE";
     private static final String CARD_REPORTS = "REPORTS";
-    private static final String CARD_SQL   = "SQL";
 
     // CardLayout + its container
-    private final CardLayout cardLayout   = new CardLayout();
-    private final JPanel     cardPanel    = new JPanel(cardLayout);
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel cardPanel  = new JPanel(cardLayout);
 
     // Toolbar nav buttons
     private final JButton navMembersBtn = new JButton("👤  Members");
@@ -30,7 +29,6 @@ public class GuiApp extends JFrame{
     private final JButton navDuesBtn = new JButton("👤  Dues");
     private final JButton navAttendanceBtn = new JButton("👤  Attendance");
     private final JButton navReportsBtn = new JButton("👤  Reports");
-    private final JButton navSqlBtn   = new JButton("⌨  SQL Runner");
 
     // Status bar (shared across all forms)
     private final JLabel statusLabel = new JLabel("Ready");
@@ -42,7 +40,7 @@ public class GuiApp extends JFrame{
     public GuiApp() {
         super("SONAR App");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(800, 700);
+        setSize(1400, 1000);
         setLocationRelativeTo(null);
 
         initDatabase();
@@ -68,7 +66,6 @@ public class GuiApp extends JFrame{
         styleNavButton(navDuesBtn,   false);
         styleNavButton(navAttendanceBtn,   false);
         styleNavButton(navReportsBtn,   false);
-        styleNavButton(navSqlBtn,   false);
         toolbar.add(navMembersBtn);
         toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navEventsBtn);
@@ -80,8 +77,6 @@ public class GuiApp extends JFrame{
         toolbar.add(navAttendanceBtn);
         toolbar.addSeparator(new Dimension(4, 0));
         toolbar.add(navReportsBtn);
-        toolbar.addSeparator(new Dimension(4, 0));
-        toolbar.add(navSqlBtn);
 
         // Register each form as a named card
         cardPanel.add(new MembersPanel(), CARD_MEMBERS);
@@ -90,7 +85,6 @@ public class GuiApp extends JFrame{
         cardPanel.add(new DuesPanel(), CARD_DUES);
         cardPanel.add(new AttendancePanel(), CARD_ATTENDANCE);
         cardPanel.add(new ReportsPanel(), CARD_REPORTS);
-        cardPanel.add(new SqlPanel(),   CARD_SQL);
 
         // Status bar
         statusLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 10));
@@ -116,7 +110,6 @@ public class GuiApp extends JFrame{
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navReportsBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Members form");
         });
 
@@ -128,7 +121,6 @@ public class GuiApp extends JFrame{
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navReportsBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Events form");
         });
 
@@ -140,7 +132,6 @@ public class GuiApp extends JFrame{
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navReportsBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Speakers form");
         });
 
@@ -152,20 +143,7 @@ public class GuiApp extends JFrame{
             styleNavButton(navMembersBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
             styleNavButton(navReportsBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Dues form");
-        });
-
-        navSqlBtn.addActionListener(e -> {
-            cardLayout.show(cardPanel, CARD_SQL);     // flip to SQL Runner card
-            styleNavButton(navSqlBtn,   true);
-            styleNavButton(navMembersBtn, false);
-            styleNavButton(navEventsBtn,   false);
-            styleNavButton(navSpeakersBtn,   false);
-            styleNavButton(navDuesBtn,   false);
-            styleNavButton(navAttendanceBtn,   false);
-            styleNavButton(navReportsBtn,   false);
-            setStatus("SQL Runner");
         });
 
         navAttendanceBtn.addActionListener(e -> {
@@ -176,7 +154,6 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navReportsBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Attendance");
         });
 
@@ -188,7 +165,6 @@ public class GuiApp extends JFrame{
             styleNavButton(navSpeakersBtn,   false);
             styleNavButton(navDuesBtn,   false);
             styleNavButton(navAttendanceBtn,   false);
-            styleNavButton(navSqlBtn,   false);
             setStatus("Reports");
         });
     }
@@ -207,14 +183,14 @@ public class GuiApp extends JFrame{
     Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
     }
-    void setStatus(String msg)    { statusLabel.setText(msg); }
-    void showError(String msg)    { JOptionPane.showMessageDialog(this, msg, "Error",      JOptionPane.ERROR_MESSAGE); }
-    void showWarning(String msg)  { JOptionPane.showMessageDialog(this, msg, "Validation", JOptionPane.WARNING_MESSAGE); }
+    void setStatus(String msg) { statusLabel.setText(msg); }
+    void showError(String msg) { JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE); }
+    void showWarning(String msg) { JOptionPane.showMessageDialog(this, msg, "Validation", JOptionPane.WARNING_MESSAGE); }
 
 
     class MembersPanel extends JPanel {
 
-        private final JTextField memberIdField    = new JTextField(5);
+        private final JTextField memberIdField = new JTextField(5);
         private final JTextField mFNameField = new JTextField(10);
         private final JTextField mLNameField = new JTextField(10);
         private final JTextField mEmailField = new JTextField(10);
@@ -231,8 +207,8 @@ public class GuiApp extends JFrame{
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
-        private final JButton clearBtn  = new JButton("Clear");
-        private final JButton loadBtn   = new JButton("Load All");
+        private final JButton clearBtn = new JButton("Clear");
+        private final JButton loadBtn = new JButton("Load All");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"ID", "First Name", "Last Name", "Email", "Major", "Status", "Street Address", "City", "State", "Zip", "Start Date","End Date"}, 0) {
@@ -283,7 +259,7 @@ public class GuiApp extends JFrame{
             JScrollPane scroll = new JScrollPane(table);
             scroll.setBorder(BorderFactory.createTitledBorder("Results"));
 
-            add(top,    BorderLayout.NORTH);
+            add(top, BorderLayout.NORTH);
             add(scroll, BorderLayout.CENTER);
         }
 
@@ -292,17 +268,17 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
-                String mFName  = mFNameField.getText().trim();
-                String mLName  = mLNameField.getText().trim();
+                String mFName = mFNameField.getText().trim();
+                String mLName = mLNameField.getText().trim();
                 String mEmail = mEmailField.getText().trim();
-                String major  = majorField.getText().trim();
-                String status  = statusField.getText().trim();
-                String mStreet  = mStreetField.getText().trim();
-                String mCity  = mCityField.getText().trim();
-                String mState  = mStateField.getText().trim();
-                String mZip  = mZipField.getText().trim();
-                Date startDate  = Date.valueOf(startDateField.getText());
-                Date endDate  = Date.valueOf(endDateField.getText());
+                String major = majorField.getText().trim();
+                String status = statusField.getText().trim();
+                String mStreet = mStreetField.getText().trim();
+                String mCity = mCityField.getText().trim();
+                String mState = mStateField.getText().trim();
+                String mZip = mZipField.getText().trim();
+                Date startDate = Date.valueOf(startDateField.getText());
+                Date endDate = Date.valueOf(endDateField.getText());
 
 
                 if (mFName.isEmpty() || mEmail.isEmpty()) {
@@ -357,17 +333,17 @@ public class GuiApp extends JFrame{
             // UPDATE
             updateBtn.addActionListener(e -> {
                 String idText = memberIdField.getText().trim();
-                String mFName   = mFNameField.getText().trim();
-                String mLName  = mLNameField.getText().trim();
-                String mEmail   = mEmailField.getText().trim();
-                String major  = majorField.getText().trim();
-                String status   = statusField.getText().trim();
-                String mStreet  = mStreetField.getText().trim();
-                String mCity   = mCityField.getText().trim();
-                String mState  = mStateField.getText().trim();
-                String mZip   = mZipField.getText().trim();
-                Date startDate  = Date.valueOf(startDateField.getText());
-                Date endDate  = Date.valueOf(endDateField.getText());
+                String mFName = mFNameField.getText().trim();
+                String mLName = mLNameField.getText().trim();
+                String mEmail = mEmailField.getText().trim();
+                String major = majorField.getText().trim();
+                String status = statusField.getText().trim();
+                String mStreet = mStreetField.getText().trim();
+                String mCity = mCityField.getText().trim();
+                String mState = mStateField.getText().trim();
+                String mZip = mZipField.getText().trim();
+                Date startDate = Date.valueOf(startDateField.getText());
+                Date endDate = Date.valueOf(endDateField.getText());
 
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
@@ -397,8 +373,8 @@ public class GuiApp extends JFrame{
             // DELETE
             deleteBtn.addActionListener(e -> {
                 String idText = memberIdField.getText().trim();
-                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
-                if (!validId(idText))   return;
+                if (idText.isEmpty()) { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText)) return;
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
@@ -482,7 +458,7 @@ public class GuiApp extends JFrame{
 
     class EventsPanel extends JPanel {
 
-        private final JTextField eventIdField    = new JTextField(5);
+        private final JTextField eventIdField = new JTextField(5);
         private final JTextField eNameField = new JTextField(5);
         private final JTextField speakerIdField = new JTextField(10);
         private final JTextField eStreetField = new JTextField(10);
@@ -496,8 +472,8 @@ public class GuiApp extends JFrame{
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
-        private final JButton clearBtn  = new JButton("Clear");
-        private final JButton loadBtn   = new JButton("Load All");
+        private final JButton clearBtn = new JButton("Clear");
+        private final JButton loadBtn = new JButton("Load All");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"Event ID", "Event Name", "Speaker ID", "Street Address", "City", "State", "Zip", "Date", "Cost"}, 0) {
@@ -545,7 +521,7 @@ public class GuiApp extends JFrame{
             JScrollPane scroll = new JScrollPane(table);
             scroll.setBorder(BorderFactory.createTitledBorder("Results"));
 
-            add(top,    BorderLayout.NORTH);
+            add(top, BorderLayout.NORTH);
             add(scroll, BorderLayout.CENTER);
         }
 
@@ -554,15 +530,14 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
-                String eName  = eNameField.getText().trim();
-                String speakerId  = speakerIdField.getText().trim();
-                String eStreet  = eStreetField.getText().trim();
-                String eCity  = eCityField.getText().trim();
-                String eState  = eStateField.getText().trim();
+                String eName = eNameField.getText().trim();
+                String speakerId = speakerIdField.getText().trim();
+                String eStreet = eStreetField.getText().trim();
+                String eCity = eCityField.getText().trim();
+                String eState = eStateField.getText().trim();
                 String eZip  = eZipField.getText().trim();
                 Date eDate = Date.valueOf(eDateField.getText());
                 double cost = Double.parseDouble(costField.getText());
-
 
                 if (eStreet.isEmpty() || eCity.isEmpty()) {
                     showWarning("Street and City are required.");
@@ -611,14 +586,14 @@ public class GuiApp extends JFrame{
             // UPDATE
             updateBtn.addActionListener(e -> {
                 String idText = eventIdField.getText().trim();
-                String eName  = eNameField.getText().trim();
-                String speakerId   = speakerIdField.getText().trim();
-                String eStreet  = eStreetField.getText().trim();
-                String eCity   = eCityField.getText().trim();
-                String eState  = eStateField.getText().trim();
-                String eZip   = eZipField.getText().trim();
+                String eName = eNameField.getText().trim();
+                String speakerId = speakerIdField.getText().trim();
+                String eStreet = eStreetField.getText().trim();
+                String eCity = eCityField.getText().trim();
+                String eState = eStateField.getText().trim();
+                String eZip = eZipField.getText().trim();
                 Date eventDate = Date.valueOf(eDateField.getText());
-                double cost  = Double.parseDouble(costField.getText());
+                double cost = Double.parseDouble(costField.getText());
 
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
@@ -645,8 +620,8 @@ public class GuiApp extends JFrame{
             // DELETE
             deleteBtn.addActionListener(e -> {
                 String idText = eventIdField.getText().trim();
-                if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
-                if (!validId(idText))   return;
+                if (idText.isEmpty()) { showWarning("Enter an ID to delete."); return; }
+                if (!validId(idText)) return;
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
@@ -740,8 +715,8 @@ public class GuiApp extends JFrame{
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
-        private final JButton clearBtn  = new JButton("Clear");
-        private final JButton loadBtn   = new JButton("Load All");
+        private final JButton clearBtn = new JButton("Clear");
+        private final JButton loadBtn = new JButton("Load All");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"SpeakerId", "First Name", "Last Name", "Email", "Title", "Industry", "Street Address", "City", "State", "Zip", "Cost"}, 0) {
@@ -791,7 +766,7 @@ public class GuiApp extends JFrame{
             JScrollPane scroll = new JScrollPane(table);
             scroll.setBorder(BorderFactory.createTitledBorder("Results"));
 
-            add(top,    BorderLayout.NORTH);
+            add(top, BorderLayout.NORTH);
             add(scroll, BorderLayout.CENTER);
         }
 
@@ -800,17 +775,16 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
-                String sFName  = sFNameField.getText().trim();
+                String sFName = sFNameField.getText().trim();
                 String sLName = sLNameField.getText().trim();
                 String sEmail = sEmailField.getText().trim();
-                String title  = titleField.getText().trim();
-                String industry  = industryField.getText().trim();
+                String title = titleField.getText().trim();
+                String industry = industryField.getText().trim();
                 String sStreet = sStreetField.getText().trim();
                 String sCity = sCityField.getText().trim();
                 String sState = sStateField.getText().trim();
                 String sZip = sZipField.getText().trim();
-                double sCost  = Double.parseDouble(sCostField.getText());
-
+                double sCost = Double.parseDouble(sCostField.getText());
 
                 if (sFName.isEmpty() || sEmail.isEmpty()) {
                     showWarning("Name and Email are required.");
@@ -865,7 +839,7 @@ public class GuiApp extends JFrame{
                 String sFName = sFNameField.getText().trim();
                 String sLName = sLNameField.getText().trim();
                 String sEmail = sEmailField.getText().trim();
-                String title  = titleField.getText().trim();
+                String title = titleField.getText().trim();
                 String industry = industryField.getText().trim();
                 String sStreet = sStreetField.getText().trim();
                 String sCity = sCityField.getText().trim();
@@ -941,7 +915,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker ORDER BY SpeakerId")) {
+                 ResultSet rs = stmt.executeQuery("SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker ORDER BY SpeakerId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -992,8 +966,9 @@ public class GuiApp extends JFrame{
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
-        private final JButton clearBtn  = new JButton("Clear");
-        private final JButton loadBtn   = new JButton("Load All");
+        private final JButton clearBtn = new JButton("Clear");
+        private final JButton loadBtn = new JButton("Load All");
+        private final JButton majorContributionsBtn = new JButton("Contributions By Major");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"DueId", "Member Id", "Date", "Amount"}, 0) {
@@ -1049,7 +1024,6 @@ public class GuiApp extends JFrame{
                 Date dDate = Date.valueOf(dDateField.getText());
                 double amount = Double.parseDouble(amountField.getText());
 
-
                 if (memberId.isEmpty()) {
                     showWarning("MemberId is required.");
                     return;
@@ -1093,7 +1067,7 @@ public class GuiApp extends JFrame{
                 String idText = dueIdField.getText().trim();
                 String memberId = memberIdField.getText().trim();
                 Date dDate = Date.valueOf(dDateField.getText());
-                double amount  = Double.parseDouble(amountField.getText());
+                double amount = Double.parseDouble(amountField.getText());
 
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
@@ -1134,6 +1108,34 @@ public class GuiApp extends JFrame{
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
 
+            // CONTRIBUTIONS BY MAJOR
+            majorContributionsBtn.addActionListener(e -> {
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT Major, SUM(Amount) AS Total FROM Member NATURAL JOIN Dues GROUP BY Major ORDER BY Total DESC;")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Contributions By Major");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
                 if (e.getValueIsAdjusting()) return;
@@ -1149,7 +1151,7 @@ public class GuiApp extends JFrame{
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
-                 ResultSet rs   = stmt.executeQuery("SELECT DueId, MemberId, DDate, Amount FROM Dues ORDER BY DueId")) {
+                 ResultSet rs = stmt.executeQuery("SELECT DueId, MemberId, DDate, Amount FROM Dues ORDER BY DueId")) {
                 tableModel.setRowCount(0);
                 int n = 0;
                 while (rs.next()) {
@@ -1185,137 +1187,6 @@ public class GuiApp extends JFrame{
         }
     }
 
-    class SqlPanel extends JPanel {
-
-        private final JTextArea  queryArea   = new JTextArea(6, 60);
-        private final JButton    runBtn      = new JButton("▶  Run Query");
-        private final JButton    clearBtn    = new JButton("Clear");
-        private final JLabel     rowCountLabel = new JLabel(" ");
-        private final DefaultTableModel tableModel = new DefaultTableModel();
-        private final JTable     resultTable = new JTable(tableModel);
-
-        SqlPanel() {
-            setLayout(new BorderLayout(0, 8));
-            setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            buildUI();
-            wireListeners();
-        }
-
-        private void buildUI() {
-            // Query input
-            queryArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-            queryArea.setLineWrap(true);
-            queryArea.setText("SELECT * FROM Member;");
-            JScrollPane queryScroll = new JScrollPane(queryArea);
-            queryScroll.setBorder(BorderFactory.createTitledBorder("SQL Query"));
-
-            // Buttons row
-            JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-            btnRow.add(runBtn);
-            btnRow.add(clearBtn);
-            btnRow.add(rowCountLabel);
-
-            JPanel top = new JPanel(new BorderLayout(0, 4));
-            top.add(queryScroll, BorderLayout.CENTER);
-            top.add(btnRow,      BorderLayout.SOUTH);
-
-            // Results table
-            resultTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            resultTable.setRowHeight(24);
-            JScrollPane resultScroll = new JScrollPane(resultTable);
-            resultScroll.setBorder(BorderFactory.createTitledBorder("Results"));
-
-            add(top,          BorderLayout.NORTH);
-            add(resultScroll, BorderLayout.CENTER);
-        }
-
-        // ── SQL Runner listeners ───────────────────────────────────────────────
-        private void wireListeners() {
-
-            // RUN QUERY
-            runBtn.addActionListener(e -> {
-                String sql = queryArea.getText().trim();
-                if (sql.isEmpty()) { showWarning("Enter a SQL query."); return; }
-
-                // Determine statement type: SELECT vs DML (INSERT/UPDATE/DELETE/DDL)
-                boolean isSelect = sql.toUpperCase().startsWith("SELECT") ||
-                        sql.toUpperCase().startsWith("WITH");
-
-                try (Connection conn = getConnection()) {
-
-                    if (isSelect) {
-                        // ── SELECT: display rows in table ──────────────────────
-                        try (PreparedStatement ps = conn.prepareStatement(sql);
-                             ResultSet rs = ps.executeQuery()) {
-
-                            tableModel.setRowCount(0);
-                            tableModel.setColumnCount(0);
-
-                            // Build columns from ResultSet metadata
-                            ResultSetMetaData meta = rs.getMetaData();
-                            int colCount = meta.getColumnCount();
-                            for (int i = 1; i <= colCount; i++)
-                                tableModel.addColumn(meta.getColumnName(i));
-
-                            // Populate rows
-                            int rowCount = 0;
-                            while (rs.next()) {
-                                Object[] row = new Object[colCount];
-                                for (int i = 1; i <= colCount; i++)
-                                    row[i - 1] = rs.getObject(i);
-                                tableModel.addRow(row);
-                                rowCount++;
-                            }
-
-                            rowCountLabel.setText(rowCount + " row(s) returned");
-                            setStatus("Query executed — " + rowCount + " row(s).");
-                        }
-
-                    } else {
-                        // ── DML / DDL: execute update ──────────────────────────
-                        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                            int affected = ps.executeUpdate();
-                            tableModel.setRowCount(0);
-                            tableModel.setColumnCount(0);
-                            tableModel.addColumn("Result");
-                            tableModel.addRow(new Object[]{affected + " row(s) affected"});
-                            rowCountLabel.setText(affected + " row(s) affected");
-                            setStatus("Statement executed — " + affected + " row(s) affected.");
-                        }
-                    }
-
-                } catch (SQLException ex) {
-                    // Show SQL error in the results table for easy reading
-                    tableModel.setRowCount(0);
-                    tableModel.setColumnCount(0);
-                    tableModel.addColumn("Error");
-                    tableModel.addRow(new Object[]{ex.getMessage()});
-                    rowCountLabel.setText("Error");
-                    setStatus("SQL error — see results table.");
-                }
-            });
-
-            // Ctrl+Enter also runs the query (keyboard shortcut)
-            queryArea.getInputMap().put(
-                    KeyStroke.getKeyStroke("control ENTER"), "runQuery");
-            queryArea.getActionMap().put(
-                    "runQuery", new AbstractAction() {
-                        @Override public void actionPerformed(java.awt.event.ActionEvent e) {
-                            runBtn.doClick();
-                        }
-                    });
-
-            // CLEAR
-            clearBtn.addActionListener(e -> {
-                queryArea.setText("");
-                tableModel.setRowCount(0);
-                tableModel.setColumnCount(0);
-                rowCountLabel.setText(" ");
-                setStatus("Cleared.");
-            });
-        }
-    }
-
     class AttendancePanel extends JPanel {
 
         private final JTextField eventIdField = new JTextField(5);
@@ -1325,8 +1196,11 @@ public class GuiApp extends JFrame{
         private final JButton searchEventBtn = new JButton("Search Events");
         private final JButton searchMemberBtn = new JButton("Search Members");
         private final JButton deleteBtn = new JButton("Delete");
-        private final JButton clearBtn  = new JButton("Clear");
-        private final JButton loadBtn   = new JButton("Load All");
+        private final JButton clearBtn = new JButton("Clear");
+        private final JButton loadBtn = new JButton("Load All");
+        private final JButton duesVsAttendanceBtn = new JButton("Dues Vs Attendance");
+        private final JButton activeAttendanceBtn = new JButton("Active Attendance");
+        private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
 
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"Event Id","Event Name", "Member Id", "First Name", "Last Name"}, 0) {
@@ -1354,7 +1228,7 @@ public class GuiApp extends JFrame{
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
-            for (JButton b : new JButton[]{insertBtn, searchMemberBtn, searchEventBtn, deleteBtn, clearBtn, loadBtn})
+            for (JButton b : new JButton[]{insertBtn, searchMemberBtn, searchEventBtn, deleteBtn, clearBtn, loadBtn, duesVsAttendanceBtn, activeAttendanceBtn, officersAttendanceBtn})
                 btns.add(b);
 
             JPanel top = new JPanel(new BorderLayout());
@@ -1367,7 +1241,7 @@ public class GuiApp extends JFrame{
             JScrollPane scroll = new JScrollPane(table);
             scroll.setBorder(BorderFactory.createTitledBorder("Results"));
 
-            add(top,    BorderLayout.NORTH);
+            add(top, BorderLayout.NORTH);
             add(scroll, BorderLayout.CENTER);
         }
 
@@ -1459,6 +1333,95 @@ public class GuiApp extends JFrame{
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
 
+            // Dues vs Attendance
+            duesVsAttendanceBtn.addActionListener(e -> {
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT M.MemberId, MFName, MLName, COUNT(A.EventId) AS 'Events Attended' FROM Member AS M LEFT OUTER JOIN Dues AS D ON M.MemberId = D.MemberId" +
+                                     " LEFT OUTER JOIN Attends AS A ON M.MemberId = A.MemberId WHERE D.DueId IS NULL GROUP BY M.MemberId, M.MFName, M.MLName HAVING Count(A.EventId) > 1")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended without Dues");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // Last Year Attendance
+            activeAttendanceBtn.addActionListener(e -> {
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT MemberId, MFName, MLName FROM Member WHERE Status = 'Active' AND MemberId NOT IN  (SELECT A.MemberId FROM Attends AS A NATURAL JOIN Event WHERE EDate >= CURDATE() - INTERVAL 365 DAY)")) {
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended without Dues");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
+            // OFFICER ATTENDANCE OF EVENTS
+            officersAttendanceBtn.addActionListener(e -> {
+                String eventId = eventIdField.getText().trim();
+                if (eventId.isEmpty()) { loadAll(); return; }
+                if (!validId(eventId))  return;
+                try (Connection conn = getConnection();
+                     PreparedStatement ps = conn.prepareStatement(
+                             "SELECT RoleName, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member NATURAL JOIN Holds NATURAL JOIN Role WHERE EventId = ?")) {
+                    ps.setInt(1, Integer.parseInt(eventId));
+                    ResultSet rs = ps.executeQuery();
+                    tableModel.setRowCount(0);
+                    tableModel.setColumnCount(0);
+
+                    // Build columns from ResultSet metadata
+                    ResultSetMetaData meta = rs.getMetaData();
+                    int colCount = meta.getColumnCount();
+                    for (int i = 1; i <= colCount; i++)
+                        tableModel.addColumn(meta.getColumnName(i));
+
+                    // Populate rows
+                    int rowCount = 0;
+                    while (rs.next()) {
+                        Object[] row = new Object[colCount];
+                        for (int i = 1; i <= colCount; i++)
+                            row[i - 1] = rs.getObject(i);
+                        tableModel.addRow(row);
+                        rowCount++;
+                    }
+                    setStatus("Attended");
+                } catch (SQLException ex) { showError(ex.getMessage()); }
+            });
+
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
                 if (e.getValueIsAdjusting()) return;
@@ -1522,8 +1485,8 @@ public class GuiApp extends JFrame{
         private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
         private final JButton newSpeakersBtn = new JButton("New Speakers");
         private final JButton majorContributionsBtn = new JButton("Contributions by Major");
-        private final JButton duesVsAttendanceBtn  = new JButton("Dues Vs Attendance");
-        private final JButton activeAttendanceBtn   = new JButton("Active Attendance");
+        private final JButton duesVsAttendanceBtn = new JButton("Dues Vs Attendance");
+        private final JButton activeAttendanceBtn = new JButton("Active Attendance");
 
         private final DefaultTableModel tableModel = new DefaultTableModel();
         private final JTable table = new JTable(tableModel);
@@ -1568,7 +1531,7 @@ public class GuiApp extends JFrame{
             JScrollPane scroll = new JScrollPane(table);
             scroll.setBorder(BorderFactory.createTitledBorder("Results"));
 
-            add(top,    BorderLayout.NORTH);
+            add(top, BorderLayout.NORTH);
             add(scroll, BorderLayout.CENTER);
         }
 
@@ -1655,7 +1618,7 @@ public class GuiApp extends JFrame{
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
-                    ps.setDouble(1, Double.parseDouble(costField.getText()));
+                    ps.setDouble(1, Double.parseDouble(cost));
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
@@ -1675,7 +1638,7 @@ public class GuiApp extends JFrame{
                         tableModel.addRow(row);
                         rowCount++;
                     }
-                    setStatus("Attended");
+                    setStatus("New Speakers");
                 } catch (SQLException ex) { showError(ex.getMessage()); }
             });
 
