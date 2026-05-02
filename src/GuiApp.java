@@ -1631,14 +1631,16 @@ public class GuiApp extends JFrame{
     class ReportsPanel extends JPanel {
         //Form Fields
         private final JTextField eventIdField = new JTextField(5);
-        private final JTextField memberIdField = new JTextField(10);
-        private final JTextField speakerIdField = new JTextField(5);
-        private final JTextField statusField = new JTextField(10);
-        private final JTextField roleField = new JTextField(5);
-        private final JTextField majorField = new JTextField(10);
         private final JTextField costField = new JTextField(10);
         private final JTextField startDateField = new JTextField(5);
         private final JTextField endDateField = new JTextField(10);
+        //Button explainers
+        private final JLabel perfectAttendanceLabel = new JLabel("- The perfect attendance query will return all members who attended every event within a given date range");
+        private final JLabel officerAttendanceLabel = new JLabel("- The officer attendance query will return all members who attended a specific given event");
+        private final JLabel newSpeakerLabel = new JLabel("- The new speaker query will return all speakers who have not been assigned an event for under a given cost");
+        private final JLabel majorContributionsLabel = new JLabel("- The major contributions query will return the sum of dues paid by major");
+        private final JLabel duesVsAttendanceLabel = new JLabel("- The Dues Vs Attendance query will return any members who have attended more than one event without paying dues");
+        private final JLabel activeAttendanceLabel = new JLabel("- The Active attendance will show which active members have not attended any events in the last calendar year");
         //Buttons
         private final JButton perfectAttendanceBtn = new JButton("Perfect Attendance");
         private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
@@ -1666,14 +1668,15 @@ public class GuiApp extends JFrame{
             g.insets = new Insets(4, 6, 4, 6);
             g.anchor = GridBagConstraints.WEST;
             addRow(form, g, 0, "Event Id:", eventIdField);
-            addRow(form, g, 1, "Member Id:", memberIdField);
-            addRow(form, g, 2, "Speaker Id:", speakerIdField);
-            addRow(form, g, 3, "Status:", statusField);
-            addRow(form, g, 4, "Role:", roleField);
-            addRow(form, g, 5, "Major:", majorField);
-            addRow(form, g, 6, "Cost:", costField);
-            addRow(form, g, 7, "Start Date:", startDateField);
-            addRow(form, g, 8, "End Date:", endDateField);
+            addRow(form, g, 1, "Cost:", costField);
+            addRow(form, g, 2, "Start Date:", startDateField);
+            addRow(form, g, 3, "End Date:", endDateField);
+            addRow(form, g, 4,"", perfectAttendanceLabel);
+            addRow(form, g, 5,"", officerAttendanceLabel);
+            addRow(form, g, 6,"", newSpeakerLabel);
+            addRow(form, g, 7,"", majorContributionsLabel);
+            addRow(form, g, 8,"", duesVsAttendanceLabel);
+            addRow(form, g, 9,"", activeAttendanceLabel);
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
@@ -1910,7 +1913,6 @@ public class GuiApp extends JFrame{
                 int row = table.getSelectedRow();
                 if (row < 0) return;
                 eventIdField.setText(tableModel.getValueAt(row, 0).toString());
-                memberIdField.setText(tableModel.getValueAt(row, 2).toString());
             });
         }
 
