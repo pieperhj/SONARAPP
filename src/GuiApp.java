@@ -37,6 +37,7 @@ public class GuiApp extends JFrame{
         SwingUtilities.invokeLater(() -> new GuiApp().setVisible(true));
     }
 
+    //Creates Instance of the App
     public GuiApp() {
         super("SONAR App");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -99,7 +100,7 @@ public class GuiApp extends JFrame{
         cardLayout.show(cardPanel, CARD_MEMBERS);
     }
 
-    //Nav Listeners
+    //Nav Listeners - switch active card
     private void wireNavListeners() {
 
         navMembersBtn.addActionListener(e -> {
@@ -187,9 +188,9 @@ public class GuiApp extends JFrame{
     void showError(String msg) { JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE); }
     void showWarning(String msg) { JOptionPane.showMessageDialog(this, msg, "Validation", JOptionPane.WARNING_MESSAGE); }
 
-
+    //Subclass for Members card
     class MembersPanel extends JPanel {
-
+        //Member Fields
         private final JTextField memberIdField = new JTextField(5);
         private final JTextField mFNameField = new JTextField(10);
         private final JTextField mLNameField = new JTextField(10);
@@ -202,20 +203,20 @@ public class GuiApp extends JFrame{
         private final JTextField mZipField = new JTextField(5);
         private final JTextField startDateField = new JTextField(10);
         private final JTextField endDateField = new JTextField(10);
-
+        //Buttons
         private final JButton insertBtn = new JButton("Insert");
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
-
+        //Default Table to display
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"ID", "First Name", "Last Name", "Email", "Major", "Status", "Street Address", "City", "State", "Zip", "Start Date","End Date"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
-
+        //Creates the MemberCard
         MembersPanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -223,7 +224,7 @@ public class GuiApp extends JFrame{
             wireListeners();
             loadAll();
         }
-
+        //Setting the labels and fields for the form
         private void buildUI() {
             // Form
             JPanel form = new JPanel(new GridBagLayout());
@@ -263,11 +264,12 @@ public class GuiApp extends JFrame{
             add(scroll, BorderLayout.CENTER);
         }
 
-        // CRUD listeners
+        // CRUD listeners - methods associated with the buttons
         private void wireListeners() {
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                //Grab the data from the form fields
                 String mFName = mFNameField.getText().trim();
                 String mLName = mLNameField.getText().trim();
                 String mEmail = mEmailField.getText().trim();
@@ -279,15 +281,16 @@ public class GuiApp extends JFrame{
                 String mZip = mZipField.getText().trim();
                 Date startDate = Date.valueOf(startDateField.getText());
                 Date endDate = Date.valueOf(endDateField.getText());
-
-
+                //Required Field check
                 if (mFName.isEmpty() || mEmail.isEmpty()) {
                     showWarning("Name and Email are required.");
                     return;
                 }
+                //Prepared Statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "INSERT INTO Member (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    //Set parameterized values
                     ps.setString(1, mFName);
                     ps.setString(2, mLName);
                     ps.setString(3, mEmail);
@@ -308,15 +311,20 @@ public class GuiApp extends JFrame{
 
             // SEARCH
             searchBtn.addActionListener(e -> {
+                //Grab the data from the form field
                 String idText = memberIdField.getText().trim();
                 if (idText.isEmpty()) { loadAll(); return; }
                 if (!validId(idText))  return;
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member WHERE MemberId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear Table
                     tableModel.setRowCount(0);
+                    //Build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("MemberId"), rs.getString("MFName"),
@@ -332,6 +340,7 @@ public class GuiApp extends JFrame{
 
             // UPDATE
             updateBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = memberIdField.getText().trim();
                 String mFName = mFNameField.getText().trim();
                 String mLName = mLNameField.getText().trim();
@@ -344,14 +353,16 @@ public class GuiApp extends JFrame{
                 String mZip = mZipField.getText().trim();
                 Date startDate = Date.valueOf(startDateField.getText());
                 Date endDate = Date.valueOf(endDateField.getText());
-
+                //Validation checks
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
                 if (mFName.isEmpty() || mEmail.isEmpty()) { showWarning("First Name and Email required."); return; }
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared Statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "UPDATE Member SET MFName=?, MLName=?, MEmail=?, Major=?, Status=?, MStreet=?, MCity=?, MState=?, MZip=?, StartDate=?, EndDate=? WHERE MemberId=?")) {
+                    //Set parameterized values
                     ps.setString(1, mFName);
                     ps.setString(2, mLName);
                     ps.setString(3, mEmail);
@@ -372,13 +383,17 @@ public class GuiApp extends JFrame{
 
             // DELETE
             deleteBtn.addActionListener(e -> {
+                //Grab data from form
                 String idText = memberIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty()) { showWarning("Enter an ID to delete."); return; }
                 if (!validId(idText)) return;
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared Statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "DELETE FROM Member WHERE memberId=?")) {
+                    //Set parameterized value
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -411,7 +426,7 @@ public class GuiApp extends JFrame{
                 endDateField.setText(tableModel.getValueAt(row, 11).toString());
             });
         }
-
+        //Load table with all data
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
@@ -429,7 +444,7 @@ public class GuiApp extends JFrame{
                 setStatus("Loaded " + n + " member(s).");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
-
+        //Clear form fields
         private void clearFields() {
             memberIdField.setText(""); mFNameField.setText(""); mLNameField.setText("");
             mEmailField.setText(""); majorField.setText(""); statusField.setText("");
@@ -437,17 +452,17 @@ public class GuiApp extends JFrame{
             mZipField.setText(""); startDateField.setText(""); endDateField.setText("");
             table.clearSelection();
         }
-
+        //Checks for int values
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
         }
-
+        //Confirmation
         private int confirm(String msg) {
             return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
-
+        //Build row
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
             g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
             p.add(new JLabel(label), g);
@@ -455,9 +470,9 @@ public class GuiApp extends JFrame{
             p.add(field, g);
         }
     }
-
+    //Subclass for the Events Card
     class EventsPanel extends JPanel {
-
+        //Form Fields
         private final JTextField eventIdField = new JTextField(5);
         private final JTextField eNameField = new JTextField(5);
         private final JTextField speakerIdField = new JTextField(10);
@@ -467,20 +482,20 @@ public class GuiApp extends JFrame{
         private final JTextField eZipField = new JTextField(5);
         private final JTextField eDateField = new JTextField(10);
         private final JTextField costField = new JTextField(10);
-
+        //Buttons
         private final JButton insertBtn = new JButton("Insert");
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
         private final JButton deleteBtn = new JButton("Delete");
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
-
+        //Default table style
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"Event ID", "Event Name", "Speaker ID", "Street Address", "City", "State", "Zip", "Date", "Cost"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
-
+        //Event Card constructor
         EventsPanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -488,7 +503,7 @@ public class GuiApp extends JFrame{
             wireListeners();
             loadAll();
         }
-
+        //Build form layout
         private void buildUI() {
             // Form
             JPanel form = new JPanel(new GridBagLayout());
@@ -530,6 +545,7 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                //Grab data from the form fields
                 String eName = eNameField.getText().trim();
                 String speakerId = speakerIdField.getText().trim();
                 String eStreet = eStreetField.getText().trim();
@@ -538,14 +554,16 @@ public class GuiApp extends JFrame{
                 String eZip  = eZipField.getText().trim();
                 Date eDate = Date.valueOf(eDateField.getText());
                 double cost = Double.parseDouble(costField.getText());
-
+                //Validation check
                 if (eStreet.isEmpty() || eCity.isEmpty()) {
                     showWarning("Street and City are required.");
                     return;
                 }
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "INSERT INTO Event (EName, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    //Set parameterized values
                     ps.setString(1, eName);
                     ps.setInt(2, Integer.parseInt(speakerId));
                     ps.setString(3, eStreet);
@@ -563,15 +581,21 @@ public class GuiApp extends JFrame{
 
             // SEARCH
             searchBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = eventIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty()) { loadAll(); return; }
                 if (!validId(idText))  return;
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT EventId, EName, SpeakerId, EStreet, ECity, EState, EZip, EDate, Cost FROM Event WHERE EventId = ?")) {
+                    //set parameterized values
                     ps.setInt(1, Integer.parseInt(idText));
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
+                    //Build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("EventId"),  rs.getString("EName"), rs.getInt("SpeakerId"),
@@ -585,6 +609,7 @@ public class GuiApp extends JFrame{
 
             // UPDATE
             updateBtn.addActionListener(e -> {
+                //Grab date from form fields
                 String idText = eventIdField.getText().trim();
                 String eName = eNameField.getText().trim();
                 String speakerId = speakerIdField.getText().trim();
@@ -594,14 +619,16 @@ public class GuiApp extends JFrame{
                 String eZip = eZipField.getText().trim();
                 Date eventDate = Date.valueOf(eDateField.getText());
                 double cost = Double.parseDouble(costField.getText());
-
+                //Validation checks
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
                 if (eStreet.isEmpty() || eCity.isEmpty()) { showWarning("First Name and Email required."); return; }
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "UPDATE Event SET EName=?, SpeakerId=?, EStreet=?, ECity=?, EState=?, EZip=?, EDate=?, Cost=? WHERE EventId=?")) {
+                    //set parameterized values
                     ps.setString(1, eName);
                     ps.setInt(2, Integer.parseInt(speakerId));
                     ps.setString(3, eStreet);
@@ -611,6 +638,7 @@ public class GuiApp extends JFrame{
                     ps.setDate(7, eventDate);
                     ps.setDouble(8, cost);
                     ps.setInt(9, Integer.parseInt(idText));
+                    //Run query
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -619,10 +647,14 @@ public class GuiApp extends JFrame{
 
             // DELETE
             deleteBtn.addActionListener(e -> {
+                //Grab date from form fields
                 String idText = eventIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty()) { showWarning("Enter an ID to delete."); return; }
                 if (!validId(idText)) return;
+                //Confirmation window
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "DELETE FROM Event WHERE eventId=?")) {
@@ -657,6 +689,7 @@ public class GuiApp extends JFrame{
         }
 
         private void loadAll() {
+            //Prepared statement to load all data
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
                  ResultSet rs   = stmt.executeQuery("SELECT EventId, EName, SpeakerId, EStreet, ECity, EState,  EZip, EDate, Cost FROM Event ORDER BY EventId")) {
@@ -671,24 +704,24 @@ public class GuiApp extends JFrame{
                 setStatus("Loaded " + n + " event(s).");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
-
+        //Clear all form fields
         private void clearFields() {
             eventIdField.setText(""); eNameField.setText(""); speakerIdField.setText("");
             eStreetField.setText(""); eCityField.setText(""); eStateField.setText("");
             eZipField.setText(""); eDateField.setText(""); costField.setText("");
             table.clearSelection();
         }
-
+        //Integer validation
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
         }
-
+        //Confirmation
         private int confirm(String msg) {
             return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
-
+        //Row builder for gui
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
             g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
             p.add(new JLabel(label), g);
@@ -696,9 +729,9 @@ public class GuiApp extends JFrame{
             p.add(field, g);
         }
     }
-
+    //Subclass for Speakers Card
     class SpeakersPanel extends JPanel {
-
+        //Form fields
         private final JTextField speakerIdField = new JTextField(5);
         private final JTextField sFNameField = new JTextField(10);
         private final JTextField sLNameField = new JTextField(10);
@@ -710,7 +743,7 @@ public class GuiApp extends JFrame{
         private final JTextField sStateField = new JTextField(10);
         private final JTextField sZipField = new JTextField(5);
         private final JTextField sCostField = new JTextField(10);
-
+        //Buttons
         private final JButton insertBtn = new JButton("Insert");
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
@@ -718,13 +751,13 @@ public class GuiApp extends JFrame{
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
         private final JButton newSpeakersBtn = new JButton("New Speakers");
-
+        //Default table
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"SpeakerId", "First Name", "Last Name", "Email", "Title", "Industry", "Street Address", "City", "State", "Zip", "Cost"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
-
+        //Constructor for Speakers Card
         SpeakersPanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -776,6 +809,7 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String sFName = sFNameField.getText().trim();
                 String sLName = sLNameField.getText().trim();
                 String sEmail = sEmailField.getText().trim();
@@ -786,14 +820,16 @@ public class GuiApp extends JFrame{
                 String sState = sStateField.getText().trim();
                 String sZip = sZipField.getText().trim();
                 double sCost = Double.parseDouble(sCostField.getText());
-
+                //Validation
                 if (sFName.isEmpty() || sEmail.isEmpty()) {
                     showWarning("Name and Email are required.");
                     return;
                 }
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "INSERT INTO Speaker (SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    //set parameterized values
                     ps.setString(1, sFName);
                     ps.setString(2, sLName);
                     ps.setString(3, sEmail);
@@ -804,6 +840,7 @@ public class GuiApp extends JFrame{
                     ps.setString(8, sState);
                     ps.setString(9, sZip);
                     ps.setDouble(10, sCost);
+                    //Run query
                     ps.executeUpdate();
                     setStatus("Speaker inserted.");
                     clearFields();
@@ -813,15 +850,22 @@ public class GuiApp extends JFrame{
 
             // SEARCH
             searchBtn.addActionListener(e -> {
+                //Grab date from form field
                 String idText = speakerIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty()) { loadAll(); return; }
                 if (!validId(idText))  return;
+                //Prepared statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT SpeakerId, SFName, SLName, SEmail, Title, Industry, SStreet, SCity, SState, SZip, SCost FROM Speaker WHERE SpeakerId = ?")) {
+                    //set parameterized value
                     ps.setInt(1, Integer.parseInt(idText));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
+                    //Build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("SpeakerId"), rs.getString("SFName"),
@@ -836,6 +880,7 @@ public class GuiApp extends JFrame{
 
             // UPDATE
             updateBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = speakerIdField.getText().trim();
                 String sFName = sFNameField.getText().trim();
                 String sLName = sLNameField.getText().trim();
@@ -847,14 +892,17 @@ public class GuiApp extends JFrame{
                 String sState = sStateField.getText().trim();
                 String sZip = sZipField.getText().trim();
                 double sCost = Double.parseDouble(sCostField.getText());
-
+                //Validation checks
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
                 if (sFName.isEmpty() || sEmail.isEmpty()) { showWarning("First Name and Email required."); return; }
+                //Confirmation
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared Statement associated with button
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "UPDATE Speaker SET SFName=?, SLName=?, SEmail=?, Title=?, Industry=?, SStreet=?, SCity=?, SState=?, SZip=?, SCost=? WHERE SpeakerId=?")) {
+                    //Set parameterized values
                     ps.setString(1, sFName);
                     ps.setString(2, sLName);
                     ps.setString(3, sEmail);
@@ -866,6 +914,7 @@ public class GuiApp extends JFrame{
                     ps.setString(9, sZip);
                     ps.setDouble(10, sCost);
                     ps.setInt(11, Integer.parseInt(idText));
+                    //Run query
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -874,13 +923,18 @@ public class GuiApp extends JFrame{
 
             // DELETE
             deleteBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = speakerIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
                 if (!validId(idText))   return;
+                //Confirmation
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "DELETE FROM Speaker WHERE speakerId=?")) {
+                    //set parameterized values
                     ps.setInt(1, Integer.parseInt(idText));
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
@@ -896,12 +950,15 @@ public class GuiApp extends JFrame{
 
             // NEW SPEAKERS TARGET COST
             newSpeakersBtn.addActionListener(e -> {
+                //Grab data from form field
                 String cost = sCostField.getText().trim();
-                //if (!validId(speakerId))  return;
+                //Prepared Statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
+                    //Set parameterized value
                     ps.setDouble(1, Double.parseDouble(cost));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
@@ -943,7 +1000,7 @@ public class GuiApp extends JFrame{
                 sCostField.setText(tableModel.getValueAt(row, 10).toString());
             });
         }
-
+        //Load all table data
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
@@ -969,7 +1026,7 @@ public class GuiApp extends JFrame{
                 setStatus("New Speakers");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
-
+        //Clear form fields
         private void clearFields() {
             speakerIdField.setText(""); sFNameField.setText(""); sLNameField.setText("");
             sEmailField.setText(""); titleField.setText(""); industryField.setText("");
@@ -977,17 +1034,17 @@ public class GuiApp extends JFrame{
             sZipField.setText(""); sCostField.setText("");
             table.clearSelection();
         }
-
+        //Integer id validation
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
         }
-
+        //confirmation
         private int confirm(String msg) {
             return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
-
+        //Gui builder helper method
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
             g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
             p.add(new JLabel(label), g);
@@ -995,14 +1052,14 @@ public class GuiApp extends JFrame{
             p.add(field, g);
         }
     }
-
+    //Subclass for Dues Card
     class DuesPanel extends JPanel {
-
+        //Form Fields
         private final JTextField dueIdField = new JTextField(5);
         private final JTextField memberIdField = new JTextField(10);
         private final JTextField dDateField = new JTextField(10);
         private final JTextField amountField = new JTextField(10);
-
+        //Buttons
         private final JButton insertBtn = new JButton("Insert");
         private final JButton searchBtn = new JButton("Search");
         private final JButton updateBtn = new JButton("Update");
@@ -1010,13 +1067,13 @@ public class GuiApp extends JFrame{
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
         private final JButton majorContributionsBtn = new JButton("Contributions By Major");
-
+        //Default Table
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"DueId", "Member Id", "Date", "Amount"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
-
+        //Constructor for Dues Card
         DuesPanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -1024,7 +1081,7 @@ public class GuiApp extends JFrame{
             wireListeners();
             loadAll();
         }
-
+        //Build form add buttons and table
         private void buildUI() {
             // Form
             JPanel form = new JPanel(new GridBagLayout());
@@ -1061,20 +1118,24 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String memberId = memberIdField.getText().trim();
                 Date dDate = Date.valueOf(dDateField.getText());
                 double amount = Double.parseDouble(amountField.getText());
-
+                //Validation
                 if (memberId.isEmpty()) {
                     showWarning("MemberId is required.");
                     return;
                 }
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "INSERT INTO Dues (MemberId, DDate, Amount) VALUES (?, ?, ?)")) {
+                    //Set parameterized values
                     ps.setInt(1, Integer.parseInt(memberId));
                     ps.setDate(2, dDate);
                     ps.setDouble(3, amount);
+                    //run query
                     ps.executeUpdate();
                     setStatus("Event inserted.");
                     clearFields();
@@ -1084,15 +1145,22 @@ public class GuiApp extends JFrame{
 
             // SEARCH
             searchBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = dueIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty()) { loadAll(); return; }
                 if (!validId(idText))  return;
+                //Prepared Statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT DueId, MemberId, DDate, Amount FROM Dues WHERE DueId = ?")) {
+                    //Set parameterized values
                     ps.setInt(1, Integer.parseInt(idText));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
+                    //Build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("DueId"), rs.getInt("MemberId"),
@@ -1105,22 +1173,27 @@ public class GuiApp extends JFrame{
 
             // UPDATE
             updateBtn.addActionListener(e -> {
+                //Grab date from form fields
                 String idText = dueIdField.getText().trim();
                 String memberId = memberIdField.getText().trim();
                 Date dDate = Date.valueOf(dDateField.getText());
                 double amount = Double.parseDouble(amountField.getText());
-
+                //Validation
                 if (idText.isEmpty()) { showWarning("Enter an ID to update."); return; }
                 if (!validId(idText)) return;
                 if (memberId.isEmpty() ) { showWarning("MemberId required."); return; }
+                //Confirmation
                 if (confirm("Update record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "UPDATE Dues SET MemberId=?, DDate=?, Amount=? WHERE DueId=?")) {
+                    //Set parameterized values
                     ps.setString(1, memberId);
                     ps.setDate(2, dDate);
                     ps.setDouble(3, amount);
                     ps.setInt(4, Integer.parseInt(idText));
+                    //run query
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Updated ID " + idText : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -1129,14 +1202,20 @@ public class GuiApp extends JFrame{
 
             // DELETE
             deleteBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String idText = dueIdField.getText().trim();
+                //Validation
                 if (idText.isEmpty())  { showWarning("Enter an ID to delete."); return; }
                 if (!validId(idText))   return;
+                //Confirmation message
                 if (confirm("Delete record ID " + idText + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "DELETE FROM Dues WHERE DueId=?")) {
+                    //Set parameterized value
                     ps.setInt(1, Integer.parseInt(idText));
+                    //Run query
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + idText : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -1151,10 +1230,13 @@ public class GuiApp extends JFrame{
 
             // CONTRIBUTIONS BY MAJOR
             majorContributionsBtn.addActionListener(e -> {
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT Major, SUM(Amount) AS Total FROM Member NATURAL JOIN Dues GROUP BY Major ORDER BY Total DESC;")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1188,7 +1270,7 @@ public class GuiApp extends JFrame{
                 amountField.setText(tableModel.getValueAt(row, 3).toString());
             });
         }
-
+        //Load all table data
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
@@ -1203,23 +1285,23 @@ public class GuiApp extends JFrame{
                 setStatus("Loaded " + n + " due(s).");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
-
+        //Clear form fields
         private void clearFields() {
             dueIdField.setText(""); memberIdField.setText("");
             dDateField.setText(""); amountField.setText("");
             table.clearSelection();
         }
-
+        //Integer validation
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
         }
-
+        //Confirmation dialogue box
         private int confirm(String msg) {
             return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
-
+        //Gui helper method
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
             g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
             p.add(new JLabel(label), g);
@@ -1227,12 +1309,12 @@ public class GuiApp extends JFrame{
             p.add(field, g);
         }
     }
-
+    //Subclass for Attendance Card
     class AttendancePanel extends JPanel {
-
+        //Form fields
         private final JTextField eventIdField = new JTextField(5);
         private final JTextField memberIdField = new JTextField(10);
-
+        //Buttons
         private final JButton insertBtn = new JButton("Insert");
         private final JButton searchEventBtn = new JButton("Search Events");
         private final JButton searchMemberBtn = new JButton("Search Members");
@@ -1242,13 +1324,13 @@ public class GuiApp extends JFrame{
         private final JButton duesVsAttendanceBtn = new JButton("Dues Vs Attendance");
         private final JButton activeAttendanceBtn = new JButton("Active Attendance");
         private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
-
+        //Default table
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"Event Id","Event Name", "Member Id", "First Name", "Last Name"}, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         private final JTable table = new JTable(tableModel);
-
+        //Attendance card constructor
         AttendancePanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -1256,7 +1338,7 @@ public class GuiApp extends JFrame{
             wireListeners();
             loadAll();
         }
-
+        //Sets form, buttons, and table
         private void buildUI() {
             // Form
             JPanel form = new JPanel(new GridBagLayout());
@@ -1291,18 +1373,22 @@ public class GuiApp extends JFrame{
 
             // INSERT
             insertBtn.addActionListener(e -> {
+                //grab data from form fields
                 String memberId = memberIdField.getText().trim();
                 String eventId = eventIdField.getText().trim();
-
+                //validation
                 if (memberId.isEmpty() || eventId.isEmpty()) {
                     showWarning("MemberId and EventId are required.");
                     return;
                 }
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "INSERT INTO Attends (MemberId, EventId) VALUES (?, ?)")) {
+                    //set parameterized values
                     ps.setInt(1, Integer.parseInt(memberId));
                     ps.setInt(2, Integer.parseInt(eventId));
+                    //run query
                     ps.executeUpdate();
                     setStatus("Attendance inserted.");
                     clearFields();
@@ -1312,15 +1398,22 @@ public class GuiApp extends JFrame{
 
             // SEARCH EVENTS
             searchEventBtn.addActionListener(e -> {
+                //grab data from form fields
                 String eventId = eventIdField.getText().trim();
+                //validation
                 if (eventId.isEmpty()) { loadAll(); return; }
                 if (!validId(eventId))  return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member WHERE EventId = ?")) {
+                    //set parameterized values
                     ps.setInt(1, Integer.parseInt(eventId));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
+                    //Build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
@@ -1332,15 +1425,22 @@ public class GuiApp extends JFrame{
 
             // SEARCH MEMBERS
             searchMemberBtn.addActionListener(e -> {
+                //Grab value from form field
                 String memberId = memberIdField.getText().trim();
+                //Validation
                 if (memberId.isEmpty()) { loadAll(); return; }
                 if (!validId(memberId))  return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT EventId, EName, MemberId, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member WHERE MemberId = ?")) {
+                    //Set parameterized value
                     ps.setInt(1, Integer.parseInt(memberId));
+                    //run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
+                    //build table from result set
                     int n = 0;
                     while (rs.next()) {
                         tableModel.addRow(new Object[]{rs.getInt("EventId"), rs.getString("EName"), rs.getInt("MemberId"), rs.getString("MFName"), rs.getString("MLName")});
@@ -1352,16 +1452,22 @@ public class GuiApp extends JFrame{
 
             // DELETE
             deleteBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String eventId = eventIdField.getText().trim();
                 String memberId = memberIdField.getText().trim();
+                //Validation
                 if (eventId.isEmpty() || memberId.isEmpty())  { showWarning("Enter both EventId and MemberId to delete."); return; }
                 if (!validId(eventId) || !validId(memberId))   return;
+                //Confirmation dialogue
                 if (confirm("Delete record ID " + eventId + " " + memberId + "?") != JOptionPane.YES_OPTION) return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "DELETE FROM Attends WHERE EventId=? AND MemberId=?")) {
+                    //Set parameterized values
                     ps.setInt(1, Integer.parseInt(eventId));
                     ps.setInt(2, Integer.parseInt(memberId));
+                    //Run query
                     int rows = ps.executeUpdate();
                     setStatus(rows > 0 ? "Deleted ID " + eventId + " " + memberId : "No record found.");
                     if (rows > 0) { clearFields(); loadAll(); }
@@ -1376,11 +1482,14 @@ public class GuiApp extends JFrame{
 
             // Dues vs Attendance
             duesVsAttendanceBtn.addActionListener(e -> {
+                //prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT M.MemberId, MFName, MLName, COUNT(A.EventId) AS 'Events Attended' FROM Member AS M LEFT OUTER JOIN Dues AS D ON M.MemberId = D.MemberId" +
                                      " LEFT OUTER JOIN Attends AS A ON M.MemberId = A.MemberId WHERE D.DueId IS NULL GROUP BY M.MemberId, M.MFName, M.MLName HAVING Count(A.EventId) > 1")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1405,10 +1514,13 @@ public class GuiApp extends JFrame{
 
             // Last Year Attendance
             activeAttendanceBtn.addActionListener(e -> {
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT MemberId, MFName, MLName FROM Member WHERE Status = 'Active' AND MemberId NOT IN  (SELECT A.MemberId FROM Attends AS A NATURAL JOIN Event WHERE EDate >= CURDATE() - INTERVAL 365 DAY)")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1433,14 +1545,20 @@ public class GuiApp extends JFrame{
 
             // OFFICER ATTENDANCE OF EVENTS
             officersAttendanceBtn.addActionListener(e -> {
+                //Grab dada from form field
                 String eventId = eventIdField.getText().trim();
+                //Validation
                 if (eventId.isEmpty()) { loadAll(); return; }
                 if (!validId(eventId))  return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT RoleName, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member NATURAL JOIN Holds NATURAL JOIN Role WHERE EventId = ?")) {
+                    //Set parameterized value
                     ps.setInt(1, Integer.parseInt(eventId));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1472,7 +1590,7 @@ public class GuiApp extends JFrame{
                 memberIdField.setText(tableModel.getValueAt(row, 2).toString());
             });
         }
-
+        //Load all table data
         private void loadAll() {
             try (Connection conn = getConnection();
                  Statement stmt = conn.createStatement();
@@ -1486,22 +1604,22 @@ public class GuiApp extends JFrame{
                 setStatus("Loaded " + n + " Attendance.");
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
-
+        //Clear form fields
         private void clearFields() {
             eventIdField.setText(""); memberIdField.setText("");
             table.clearSelection();
         }
-
+        //Validation
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
         }
-
+        //Confirmation dialogue
         private int confirm(String msg) {
             return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
-
+        //Gui helper method
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
             g.gridx = 0; g.gridy = row; g.weightx = 0; g.fill = GridBagConstraints.NONE;
             p.add(new JLabel(label), g);
@@ -1509,9 +1627,9 @@ public class GuiApp extends JFrame{
             p.add(field, g);
         }
     }
-
+    //Subclass for Reports Card
     class ReportsPanel extends JPanel {
-
+        //Form Fields
         private final JTextField eventIdField = new JTextField(5);
         private final JTextField memberIdField = new JTextField(10);
         private final JTextField speakerIdField = new JTextField(5);
@@ -1521,17 +1639,17 @@ public class GuiApp extends JFrame{
         private final JTextField costField = new JTextField(10);
         private final JTextField startDateField = new JTextField(5);
         private final JTextField endDateField = new JTextField(10);
-
+        //Buttons
         private final JButton perfectAttendanceBtn = new JButton("Perfect Attendance");
         private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
         private final JButton newSpeakersBtn = new JButton("New Speakers");
         private final JButton majorContributionsBtn = new JButton("Contributions by Major");
         private final JButton duesVsAttendanceBtn = new JButton("Dues Vs Attendance");
         private final JButton activeAttendanceBtn = new JButton("Active Attendance");
-
+        //Default table
         private final DefaultTableModel tableModel = new DefaultTableModel();
         private final JTable table = new JTable(tableModel);
-
+        //Constructor for Reports Card
         ReportsPanel() {
             setLayout(new BorderLayout(0, 6));
             setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -1539,7 +1657,7 @@ public class GuiApp extends JFrame{
             wireListeners();
             loadAll();
         }
-
+        //Build form, buttons, and table
         private void buildUI() {
             // Form
             JPanel form = new JPanel(new GridBagLayout());
@@ -1581,22 +1699,21 @@ public class GuiApp extends JFrame{
 
             // PERFECT ATTENDANCE
             perfectAttendanceBtn.addActionListener(e -> {
+                //Grab data from form fields
                 Date startDate = Date.valueOf(startDateField.getText());
                 Date endDate = Date.valueOf(endDateField.getText());
-
-                /*if (memberId.isEmpty() || eventId.isEmpty()) {
-                    showWarning("MemberId and EventId are required.");
-                    return;
-                }*/
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT MemberId, MFName, MLName FROM Member NATURAL JOIN Attends NATURAL JOIN (SELECT EventId FROM Event WHERE EDate BETWEEN ? AND ? ) AS Events GROUP BY MemberId, MFName, MLName HAVING count(*) = ((SELECT count(*) FROM Event WHERE EDate BETWEEN ? AND ? ))")) {
-
+                    //set parameterized values
                     ps.setDate(1, startDate);
                     ps.setDate(2, endDate);
                     ps.setDate(3, startDate);
                     ps.setDate(4, endDate);
+                    //run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1622,14 +1739,20 @@ public class GuiApp extends JFrame{
 
             // OFFICER ATTENDANCE OF EVENTS
             officersAttendanceBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String eventId = eventIdField.getText().trim();
+                //Validation
                 if (eventId.isEmpty()) { loadAll(); return; }
                 if (!validId(eventId))  return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT RoleName, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member NATURAL JOIN Holds NATURAL JOIN Role WHERE EventId = ?")) {
+                    //Set parameterized values
                     ps.setInt(1, Integer.parseInt(eventId));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1654,13 +1777,17 @@ public class GuiApp extends JFrame{
 
             // NEW SPEAKERS TARGET COST
             newSpeakersBtn.addActionListener(e -> {
+                //Grab data from form fields
                 String cost = costField.getText().trim();
-                //if (!validId(speakerId))  return;
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
+                    //Set parameterized value
                     ps.setDouble(1, Double.parseDouble(cost));
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1685,10 +1812,13 @@ public class GuiApp extends JFrame{
 
             // CONTRIBUTIONS BY MAJOR
             majorContributionsBtn.addActionListener(e -> {
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT Major, SUM(Amount) AS Total FROM Member NATURAL JOIN Dues GROUP BY Major ORDER BY Total DESC;")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1713,11 +1843,14 @@ public class GuiApp extends JFrame{
 
             // Dues vs Attendance
             duesVsAttendanceBtn.addActionListener(e -> {
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT M.MemberId, MFName, MLName, COUNT(A.EventId) AS 'Events Attended' FROM Member AS M LEFT OUTER JOIN Dues AS D ON M.MemberId = D.MemberId" +
                              " LEFT OUTER JOIN Attends AS A ON M.MemberId = A.MemberId WHERE D.DueId IS NULL GROUP BY M.MemberId, M.MFName, M.MLName HAVING Count(A.EventId) > 1")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //Clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1742,10 +1875,13 @@ public class GuiApp extends JFrame{
 
             // Last Year Attendance
             activeAttendanceBtn.addActionListener(e -> {
+                //Prepared statement
                 try (Connection conn = getConnection();
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT MemberId, MFName, MLName FROM Member WHERE Status = 'Active' AND MemberId NOT IN  (SELECT A.MemberId FROM Attends AS A NATURAL JOIN Event WHERE EDate >= CURDATE() - INTERVAL 365 DAY)")) {
+                    //Run query
                     ResultSet rs = ps.executeQuery();
+                    //clear table
                     tableModel.setRowCount(0);
                     tableModel.setColumnCount(0);
 
@@ -1792,19 +1928,10 @@ public class GuiApp extends JFrame{
             } catch (SQLException ex) { showError(ex.getMessage()); }
         }
 
-        private void clearFields() {
-            eventIdField.setText(""); memberIdField.setText("");
-            table.clearSelection();
-        }
-
         private boolean validId(String t) {
             try { if (Integer.parseInt(t) > 0) return true; } catch (NumberFormatException ignored) {}
             showWarning("ID must be a positive integer.");
             return false;
-        }
-
-        private int confirm(String msg) {
-            return JOptionPane.showConfirmDialog(GuiApp.this, msg, "Confirm", JOptionPane.YES_NO_OPTION);
         }
 
         private void addRow(JPanel p, GridBagConstraints g, int row, String label, JComponent field) {
