@@ -286,27 +286,55 @@ public class GuiApp extends JFrame{
                     showWarning("Name and Email are required.");
                     return;
                 }
-                //Prepared Statement associated with button
-                try (Connection conn = getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                             "INSERT INTO Member (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-                    //Set parameterized values
-                    ps.setString(1, mFName);
-                    ps.setString(2, mLName);
-                    ps.setString(3, mEmail);
-                    ps.setString(4, major);
-                    ps.setString(5, status);
-                    ps.setString(6, mStreet);
-                    ps.setString(7, mCity);
-                    ps.setString(8, mState);
-                    ps.setString(9, mZip);
-                    ps.setDate(10, startDate);
-                    ps.setDate(11, endDate);
-                    ps.executeUpdate();
-                    setStatus("Member inserted.");
-                    clearFields();
-                    loadAll();
-                } catch (SQLException ex) { showError(ex.getMessage()); }
+
+                if (endDate == null) {
+                    //Prepared Statement associated with button
+                    try (Connection conn = getConnection();
+                         PreparedStatement ps = conn.prepareStatement(
+                                 "INSERT INTO Member (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                        //Set parameterized values
+                        ps.setString(1, mFName);
+                        ps.setString(2, mLName);
+                        ps.setString(3, mEmail);
+                        ps.setString(4, major);
+                        ps.setString(5, status);
+                        ps.setString(6, mStreet);
+                        ps.setString(7, mCity);
+                        ps.setString(8, mState);
+                        ps.setString(9, mZip);
+                        ps.setDate(10, startDate);
+                        ps.executeUpdate();
+                        setStatus("Member inserted.");
+                        clearFields();
+                        loadAll();
+                    } catch (SQLException ex) {
+                        showError(ex.getMessage());
+                    }
+                }else{
+                        //Prepared Statement associated with button
+                    try (Connection conn = getConnection();
+                         PreparedStatement ps = conn.prepareStatement(
+                                 "INSERT INTO Member (MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                        //Set parameterized values
+                        ps.setString(1, mFName);
+                        ps.setString(2, mLName);
+                        ps.setString(3, mEmail);
+                        ps.setString(4, major);
+                        ps.setString(5, status);
+                        ps.setString(6, mStreet);
+                        ps.setString(7, mCity);
+                        ps.setString(8, mState);
+                        ps.setString(9, mZip);
+                        ps.setDate(10, startDate);
+                        ps.setDate(11, endDate);
+                        ps.executeUpdate();
+                        setStatus("Member inserted.");
+                        clearFields();
+                        loadAll();
+                    } catch (SQLException ex) {
+                        showError(ex.getMessage());
+                    }
+                }
             });
 
             // SEARCH
@@ -320,7 +348,6 @@ public class GuiApp extends JFrame{
                      PreparedStatement ps = conn.prepareStatement(
                              "SELECT MemberId, MFName, MLName, MEmail, Major, Status, MStreet, MCity, MState, MZip, StartDate, EndDate FROM Member WHERE MemberId = ?")) {
                     ps.setInt(1, Integer.parseInt(idText));
-                    //Run query
                     ResultSet rs = ps.executeQuery();
                     //Clear Table
                     tableModel.setRowCount(0);
@@ -750,7 +777,7 @@ public class GuiApp extends JFrame{
         private final JButton deleteBtn = new JButton("Delete");
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
-        private final JButton newSpeakersBtn = new JButton("New Speakers");
+
         //Default table
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"SpeakerId", "First Name", "Last Name", "Email", "Title", "Industry", "Street Address", "City", "State", "Zip", "Cost"}, 0) {
@@ -787,7 +814,7 @@ public class GuiApp extends JFrame{
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
-            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn, newSpeakersBtn})
+            for (JButton b : new JButton[]{insertBtn, searchBtn, updateBtn, deleteBtn, clearBtn, loadBtn})
                 btns.add(b);
 
             JPanel top = new JPanel(new BorderLayout());
@@ -850,8 +877,10 @@ public class GuiApp extends JFrame{
 
             // SEARCH
             searchBtn.addActionListener(e -> {
-                //Grab date from form field
+                //Grab ID from form field
                 String idText = speakerIdField.getText().trim();
+                String sFName = sFNameField.getText().trim();
+                String sLName = sLNameField.getText().trim();
                 //Validation
                 if (idText.isEmpty()) { loadAll(); return; }
                 if (!validId(idText))  return;
@@ -947,40 +976,6 @@ public class GuiApp extends JFrame{
 
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
-
-            // NEW SPEAKERS TARGET COST
-            newSpeakersBtn.addActionListener(e -> {
-                //Grab data from form field
-                String cost = sCostField.getText().trim();
-                //Prepared Statement
-                try (Connection conn = getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                             "SELECT SpeakerId, SFName, SLName, SCost FROM Speaker WHERE SCost < ? AND SpeakerId NOT IN (SELECT DISTINCT SpeakerId FROM Event)")) {
-                    //Set parameterized value
-                    ps.setDouble(1, Double.parseDouble(cost));
-                    //Run query
-                    ResultSet rs = ps.executeQuery();
-                    tableModel.setRowCount(0);
-                    tableModel.setColumnCount(0);
-
-                    // Build columns from ResultSet metadata
-                    ResultSetMetaData meta = rs.getMetaData();
-                    int colCount = meta.getColumnCount();
-                    for (int i = 1; i <= colCount; i++)
-                        tableModel.addColumn(meta.getColumnName(i));
-
-                    // Populate rows
-                    int rowCount = 0;
-                    while (rs.next()) {
-                        Object[] row = new Object[colCount];
-                        for (int i = 1; i <= colCount; i++)
-                            row[i - 1] = rs.getObject(i);
-                        tableModel.addRow(row);
-                        rowCount++;
-                    }
-                    setStatus("New Speakers");
-                } catch (SQLException ex) { showError(ex.getMessage()); }
-            });
 
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
@@ -1321,9 +1316,6 @@ public class GuiApp extends JFrame{
         private final JButton deleteBtn = new JButton("Delete");
         private final JButton clearBtn = new JButton("Clear");
         private final JButton loadBtn = new JButton("Load All");
-        private final JButton duesVsAttendanceBtn = new JButton("Dues Vs Attendance");
-        private final JButton activeAttendanceBtn = new JButton("Active Attendance");
-        private final JButton officersAttendanceBtn = new JButton("Officer Attendance");
         //Default table
         private final DefaultTableModel tableModel = new DefaultTableModel(
                 new String[]{"Event Id","Event Name", "Member Id", "First Name", "Last Name"}, 0) {
@@ -1351,7 +1343,7 @@ public class GuiApp extends JFrame{
 
             // Buttons
             JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
-            for (JButton b : new JButton[]{insertBtn, searchMemberBtn, searchEventBtn, deleteBtn, clearBtn, loadBtn, duesVsAttendanceBtn, activeAttendanceBtn, officersAttendanceBtn})
+            for (JButton b : new JButton[]{insertBtn, searchMemberBtn, searchEventBtn, deleteBtn, clearBtn, loadBtn})
                 btns.add(b);
 
             JPanel top = new JPanel(new BorderLayout());
@@ -1480,107 +1472,6 @@ public class GuiApp extends JFrame{
             // LOAD ALL
             loadBtn.addActionListener(e -> { clearFields(); loadAll(); });
 
-            // Dues vs Attendance
-            duesVsAttendanceBtn.addActionListener(e -> {
-                //prepared statement
-                try (Connection conn = getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                             "SELECT M.MemberId, MFName, MLName, COUNT(A.EventId) AS 'Events Attended' FROM Member AS M LEFT OUTER JOIN Dues AS D ON M.MemberId = D.MemberId" +
-                                     " LEFT OUTER JOIN Attends AS A ON M.MemberId = A.MemberId WHERE D.DueId IS NULL GROUP BY M.MemberId, M.MFName, M.MLName HAVING Count(A.EventId) > 1")) {
-                    //Run query
-                    ResultSet rs = ps.executeQuery();
-                    //clear table
-                    tableModel.setRowCount(0);
-                    tableModel.setColumnCount(0);
-
-                    // Build columns from ResultSet metadata
-                    ResultSetMetaData meta = rs.getMetaData();
-                    int colCount = meta.getColumnCount();
-                    for (int i = 1; i <= colCount; i++)
-                        tableModel.addColumn(meta.getColumnName(i));
-
-                    // Populate rows
-                    int rowCount = 0;
-                    while (rs.next()) {
-                        Object[] row = new Object[colCount];
-                        for (int i = 1; i <= colCount; i++)
-                            row[i - 1] = rs.getObject(i);
-                        tableModel.addRow(row);
-                        rowCount++;
-                    }
-                    setStatus("Attended without Dues");
-                } catch (SQLException ex) { showError(ex.getMessage()); }
-            });
-
-            // Last Year Attendance
-            activeAttendanceBtn.addActionListener(e -> {
-                //Prepared statement
-                try (Connection conn = getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                             "SELECT MemberId, MFName, MLName FROM Member WHERE Status = 'Active' AND MemberId NOT IN  (SELECT A.MemberId FROM Attends AS A NATURAL JOIN Event WHERE EDate >= CURDATE() - INTERVAL 365 DAY)")) {
-                    //Run query
-                    ResultSet rs = ps.executeQuery();
-                    //Clear table
-                    tableModel.setRowCount(0);
-                    tableModel.setColumnCount(0);
-
-                    // Build columns from ResultSet metadata
-                    ResultSetMetaData meta = rs.getMetaData();
-                    int colCount = meta.getColumnCount();
-                    for (int i = 1; i <= colCount; i++)
-                        tableModel.addColumn(meta.getColumnName(i));
-
-                    // Populate rows
-                    int rowCount = 0;
-                    while (rs.next()) {
-                        Object[] row = new Object[colCount];
-                        for (int i = 1; i <= colCount; i++)
-                            row[i - 1] = rs.getObject(i);
-                        tableModel.addRow(row);
-                        rowCount++;
-                    }
-                    setStatus("Attended without Dues");
-                } catch (SQLException ex) { showError(ex.getMessage()); }
-            });
-
-            // OFFICER ATTENDANCE OF EVENTS
-            officersAttendanceBtn.addActionListener(e -> {
-                //Grab dada from form field
-                String eventId = eventIdField.getText().trim();
-                //Validation
-                if (eventId.isEmpty()) { loadAll(); return; }
-                if (!validId(eventId))  return;
-                //Prepared statement
-                try (Connection conn = getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                             "SELECT RoleName, MFName, MLName FROM Attends NATURAL JOIN Event NATURAL JOIN Member NATURAL JOIN Holds NATURAL JOIN Role WHERE EventId = ?")) {
-                    //Set parameterized value
-                    ps.setInt(1, Integer.parseInt(eventId));
-                    //Run query
-                    ResultSet rs = ps.executeQuery();
-                    //Clear table
-                    tableModel.setRowCount(0);
-                    tableModel.setColumnCount(0);
-
-                    // Build columns from ResultSet metadata
-                    ResultSetMetaData meta = rs.getMetaData();
-                    int colCount = meta.getColumnCount();
-                    for (int i = 1; i <= colCount; i++)
-                        tableModel.addColumn(meta.getColumnName(i));
-
-                    // Populate rows
-                    int rowCount = 0;
-                    while (rs.next()) {
-                        Object[] row = new Object[colCount];
-                        for (int i = 1; i <= colCount; i++)
-                            row[i - 1] = rs.getObject(i);
-                        tableModel.addRow(row);
-                        rowCount++;
-                    }
-                    setStatus("Attended");
-                } catch (SQLException ex) { showError(ex.getMessage()); }
-            });
-
             // Row click → populate form
             table.getSelectionModel().addListSelectionListener(e -> {
                 if (e.getValueIsAdjusting()) return;
@@ -1636,7 +1527,7 @@ public class GuiApp extends JFrame{
         private final JTextField endDateField = new JTextField(10);
         //Button explainers
         private final JLabel perfectAttendanceLabel = new JLabel("- The perfect attendance query will return all members who attended every event within a given date range");
-        private final JLabel officerAttendanceLabel = new JLabel("- The officer attendance query will return all members who attended a specific given event");
+        private final JLabel officerAttendanceLabel = new JLabel("- The officer attendance query will return all officers who attended a specific given event");
         private final JLabel newSpeakerLabel = new JLabel("- The new speaker query will return all speakers who have not been assigned an event for under a given cost");
         private final JLabel majorContributionsLabel = new JLabel("- The major contributions query will return the sum of dues paid by major");
         private final JLabel duesVsAttendanceLabel = new JLabel("- The Dues Vs Attendance query will return any members who have attended more than one event without paying dues");
